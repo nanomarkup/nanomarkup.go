@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-// Marshal returns the encoding data of input data.
+// Marshal returns the encoding data for the input value.
 //
-// It traverses the value data recursively.
+// It traverses the value recursively.
 func Marshal(data any) ([]byte, error) {
 	val := reflect.ValueOf(data)
 	switch val.Kind() {
@@ -45,9 +45,11 @@ func Marshal(data any) ([]byte, error) {
 	}
 }
 
-// Unmarshal parses the NanoM-encoded data and stores the result in the value pointed to by v. If v is nil or not a pointer, Unmarshal returns an InvalidArgumentError.
+// Unmarshal parses the encoded data and stores the result in v.
+// If v is nil or not a pointer, Unmarshal returns an InvalidArgumentError.
 //
-// It uses the inverse of the encodings that Marshal uses, allocating maps, slices, and pointers as necessary.
+// It uses the inverse of the encodings that Marshal uses, allocating
+// maps, slices, and pointers as necessary.
 func Unmarshal(data []byte, v any) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer {
@@ -66,12 +68,13 @@ func Unmarshal(data []byte, v any) error {
 	return unmarshal(&d, elem, undefined)
 }
 
-// InvalidArgumentError describes an invalid argument.
+// InvalidArgumentError describes an error that occurs when an invalid argument is provided.
 type InvalidArgumentError struct {
 	Context string
 	Err     error
 }
 
+// Error returns a string representation of the InvalidArgumentError.
 func (e *InvalidArgumentError) Error() string {
 	if len(strings.TrimSpace(e.Context)) > 0 {
 		return fmt.Sprintf(errorContextFmt, e.Context, e.Err.Error())
@@ -80,13 +83,14 @@ func (e *InvalidArgumentError) Error() string {
 	}
 }
 
-// InvalidEntityError describes an invalid entity.
+// InvalidEntityError describes an error that occurs when an attempt is made with an invalid entity.
 type InvalidEntityError struct {
 	Context string
 	Entity  string
 	Err     error
 }
 
+// Error returns a string representation of the InvalidEntityError.
 func (e *InvalidEntityError) Error() string {
 	var s string
 	if len(strings.TrimSpace(e.Entity)) > 0 {
