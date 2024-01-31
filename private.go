@@ -27,6 +27,12 @@ const (
 
 func marshal(data any) ([]byte, error) {
 	val := reflect.ValueOf(data)
+	if isValueNil(val) {
+		return []byte(""), nil
+	}
+	if val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
 	switch val.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return []byte(strconv.FormatInt(val.Int(), 10)), nil
@@ -42,19 +48,19 @@ func marshal(data any) ([]byte, error) {
 		return []byte(strconv.FormatBool(val.Bool())), nil
 	case reflect.Slice, reflect.Array:
 		if val.Len() == 0 {
-			return []byte(""), nil
+			return []byte("[\n]\n"), nil
 		} else {
 			return marshalMap(val)
 		}
 	case reflect.Map:
 		if val.Len() == 0 {
-			return []byte(""), nil
+			return []byte("{\n}\n"), nil
 		} else {
 			return marshalSlice(val)
 		}
 	case reflect.Struct:
 		if val.IsZero() {
-			return []byte(""), nil
+			return []byte("{\n}\n"), nil
 		}
 		return marshalStruct(data)
 	default:
@@ -63,15 +69,22 @@ func marshal(data any) ([]byte, error) {
 }
 
 func marshalStruct(data any) ([]byte, error) {
-	typ := reflect.TypeOf(data)
 	val := reflect.ValueOf(data)
+	if val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
+	typ := val.Type()
 	res := []byte("{\n")
 	for _, f := range reflect.VisibleFields(typ) {
 		if !f.IsExported() {
 			continue
 		}
+		fv := val.Field(f.Index[0])
+		if isValueNil(fv) {
+			continue
+		}
 		res = append(res, []byte(f.Name+" ")...)
-		v, e := marshal(val.Field(f.Index[0]).Interface())
+		v, e := marshal(fv.Interface())
 		if e != nil {
 			return nil, e
 		}
@@ -79,9 +92,6 @@ func marshalStruct(data any) ([]byte, error) {
 		if string(res[len(res)-1]) != "\n" {
 			res = append(res, "\n"...)
 		}
-	}
-	if len(res) == 2 {
-		return []byte(""), nil
 	}
 	res = append(res, []byte("}\n")...)
 	return res, nil
@@ -98,9 +108,6 @@ func marshalSlice(value reflect.Value) ([]byte, error) {
 		if string(res[len(res)-1]) != "\n" {
 			res = append(res, "\n"...)
 		}
-	}
-	if len(res) == 2 {
-		return []byte(""), nil
 	}
 	res = append(res, []byte("]\n")...)
 	return res, nil
@@ -124,9 +131,6 @@ func marshalMap(value reflect.Value) ([]byte, error) {
 		if string(res[len(res)-1]) != "\n" {
 			res = append(res, "\n"...)
 		}
-	}
-	if len(res) == 2 {
-		return []byte(""), nil
 	}
 	res = append(res, []byte("}\n")...)
 	return res, nil
@@ -220,37 +224,54 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 					v.SetMapIndex(kv, vv)
 				} else {
 					if field := v.FieldByName(ks); field.IsValid() {
-						vv := reflect.New(field.Type()).Elem()
-						// check for an inline entity/array
-						switch vs[0] {
-						case 91: // [
-							val := vs[1:]
-							if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
-								return &InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an array must be started from a new line")}
+						var vv reflect.Value
+						if field.Type().Kind() == reflect.Pointer {
+							if field.Type().Elem().Kind() == reflect.Map {
+								vv = reflect.MakeMap(field.Type().Elem())
 							} else {
-								// it is an internal array, parse it using other thread/loop
-								e := unmarshal(d, vv, array)
-								if e != nil {
+								vv = reflect.New(field.Type().Elem()).Elem()
+							}
+						} else if field.Type().Kind() == reflect.Map {
+							vv = reflect.MakeMap(field.Type())
+						} else {
+							vv = reflect.New(field.Type()).Elem()
+						}
+						if len(vs) > 0 {
+							// check for an inline entity/array
+							switch vs[0] {
+							case 91: // [
+								val := vs[1:]
+								if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
+									return &InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an array must be started from a new line")}
+								} else {
+									// it is an internal array, parse it using other thread/loop
+									e := unmarshal(d, vv, array)
+									if e != nil {
+										return e
+									}
+								}
+							case 123: // {
+								val := vs[1:]
+								if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
+									return &InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an entity must be started from a new line")}
+								} else {
+									// it is an internal entity, parse it using other thread/loop
+									e := unmarshal(d, vv, entity)
+									if e != nil {
+										return e
+									}
+								}
+							default:
+								if e := unmarshalValue(vv, vs); e != nil {
 									return e
 								}
-							}
-						case 123: // {
-							val := vs[1:]
-							if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
-								return &InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an entity must be started from a new line")}
-							} else {
-								// it is an internal entity, parse it using other thread/loop
-								e := unmarshal(d, vv, entity)
-								if e != nil {
-									return e
-								}
-							}
-						default:
-							if e := unmarshalValue(vv, vs); e != nil {
-								return e
 							}
 						}
-						field.Set(vv)
+						if field.Type().Kind() == reflect.Pointer {
+							field.Set(vv.Addr())
+						} else {
+							field.Set(vv)
+						}
 					}
 				}
 			default:
@@ -384,5 +405,14 @@ func unmarshalValue(v reflect.Value, s string) error {
 		return nil
 	default:
 		return &InvalidEntityError{"Unmarshal", s, fmt.Errorf("cannot decode the entity")}
+	}
+}
+
+func isValueNil(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
 	}
 }

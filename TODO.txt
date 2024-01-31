@@ -12,3 +12,5 @@ Implement the following functions
 
 - func Valid(data []byte) bool
   Valid reports whether data is a valid JSON encoding.    
+
+Tests

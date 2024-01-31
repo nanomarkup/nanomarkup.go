@@ -13,6 +13,9 @@ import (
 // It traverses the value recursively.
 func Marshal(data any) ([]byte, error) {
 	val := reflect.ValueOf(data)
+	if val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
 	switch val.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return []byte(strconv.FormatInt(val.Int(), 10)), nil
@@ -28,13 +31,13 @@ func Marshal(data any) ([]byte, error) {
 		return []byte(strconv.FormatBool(val.Bool())), nil
 	case reflect.Slice, reflect.Array:
 		if val.Len() == 0 {
-			return []byte(""), nil
+			return []byte("[\n]\n"), nil
 		} else {
 			return marshalSlice(val)
 		}
 	case reflect.Map:
 		if val.Len() == 0 {
-			return []byte(""), nil
+			return []byte("{\n}\n"), nil
 		} else {
 			return marshalMap(val)
 		}

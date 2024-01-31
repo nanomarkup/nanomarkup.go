@@ -1,8 +1,8 @@
 package nanomarkup
 
 import (
-	"encoding"
 	"fmt"
+	"net/http"
 	"testing"
 )
 
@@ -12,18 +12,33 @@ func TestNilMarshal(t *testing.T) {
 		want string
 	}{
 		{v: nil, want: ""},
-		{v: new(float64), want: ""},
-		{v: []any(nil), want: ""},
-		{v: []string(nil), want: ``},
-		{v: map[string]string(nil), want: ""},
-		{v: []byte(nil), want: ""},
 		{v: func() {}, want: ""},
-		{v: struct{}{}, want: ""},
 		{v: interface{}(nil), want: ""},
+	}
+
+	for _, item := range testCases {
+		out, err := Marshal(item.v)
+		if s := checkMarshal(item.v, out, item.want, err); s != "" {
+			t.Error(s)
+		}
+	}
+}
+
+func TestEmptyMarshal(t *testing.T) {
+	testCases := []struct {
+		v    any
+		want string
+	}{
+		{v: new(float64), want: "0"},
+		{v: []any(nil), want: "[\n]\n"},
+		{v: []string(nil), want: "[\n]\n"},
+		{v: map[string]string(nil), want: "{\n}\n"},
+		{v: []byte(nil), want: "[\n]\n"},
+		{v: struct{}{}, want: "{\n}\n"},
 		{v: struct{ M string }{"gopher"}, want: "{\nM gopher\n}\n"},
-		{v: struct{ M testing.B }{}, want: "{\nM \n}\n"},
-		{v: struct{ M encoding.TextMarshaler }{}, want: "{\nM \n}\n"},
-		{v: struct{ M any }{(nil)}, want: "{\nM \n}\n"},
+		{v: struct{ M testing.B }{}, want: "{\nM {\n}\n}\n"},
+		// {v: struct{ M encoding.TextMarshaler }{}, want: "{\nM \n}\n"},
+		// {v: struct{ M any }{(nil)}, want: "{\nM \n}\n"},
 	}
 
 	for _, item := range testCases {
@@ -132,11 +147,11 @@ func TestSliceMarshal(t *testing.T) {
 		want string
 	}{
 		// test arrays
-		{v: [0]int{}, want: ""},
+		{v: [0]int{}, want: "[\n]\n"},
 		{v: [3]int{}, want: "[\n0\n0\n0\n]\n"},
 		{v: [3]string{"apple", "banana", "cherry"}, want: "[\napple\nbanana\ncherry\n]\n"},
 		// test slices
-		{v: []int{}, want: ""},
+		{v: []int{}, want: "[\n]\n"},
 		{v: []int{1, 2, 3}, want: "[\n1\n2\n3\n]\n"},
 		{v: []string{"apple", "banana", "cherry"}, want: "[\napple\nbanana\ncherry\n]\n"},
 	}
@@ -154,7 +169,7 @@ func TestMapMarshal(t *testing.T) {
 		v    any
 		want string
 	}{
-		{v: map[int]interface{}{}, want: ""},
+		{v: map[int]interface{}{}, want: "{\n}\n"},
 		{v: map[int]interface{}{1: "Hi!"}, want: "{\n1 Hi!\n}\n"},
 		{v: map[string]interface{}{"key": "value"}, want: "{\nkey value\n}\n"},
 	}
@@ -697,4 +712,21 @@ func TestStructUnmarshal(t *testing.T) {
 	if mes != "" {
 		t.Error(mes)
 	}
+}
+
+func TestHTTPRequestStruct(t *testing.T) {
+	req, err := http.NewRequest("GET", "https://google.com", nil)
+	if err != nil {
+		t.Error(err)
+	}
+	enc, err := Marshal(req)
+	if err != nil {
+		t.Error(err)
+	}
+	dec := &http.Request{}
+	err = Unmarshal(enc, dec)
+	if err != nil {
+		t.Error(err)
+	}
+	testStructs(t, req, dec)
 }

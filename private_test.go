@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"testing"
 )
 
 func anyToStr(v any) string {
@@ -122,4 +123,40 @@ func checkUnmarshalBool(in string, out bool, want bool, e error) string {
 		res += "; error: " + e.Error()
 	}
 	return res
+}
+
+func testStructs(t *testing.T, st1 any, st2 any) {
+	typ := reflect.TypeOf(st1).Elem()
+	isNilF1 := false
+	isNilF2 := false
+	var f1 reflect.Value
+	for i := 0; i < typ.NumField(); i++ {
+		f := typ.Field(i)
+		// check if the field is public
+		if f.PkgPath == "" {
+			f1 = reflect.ValueOf(st1).Elem().FieldByName(f.Name)
+			f2 := reflect.ValueOf(st2).Elem().FieldByName(f.Name)
+			isNilF1 = isValueNil(f1)
+			isNilF2 = isValueNil(f2)
+			if isNilF1 && isNilF2 {
+				continue
+			} else if (isNilF1 && !isNilF2) || (!isNilF1 && isNilF2) {
+				if isNilF1 {
+					t.Errorf("%s field of the request data is Nil", f.Name)
+				} else if isNilF2 {
+					t.Errorf("%s field of the decoded data is Nil", f.Name)
+				}
+				continue
+			}
+			if f1.Kind() == reflect.Pointer {
+				testStructs(t, f1.Interface(), f2.Interface())
+			} else {
+				v1 := f1.Interface()
+				v2 := f2.Interface()
+				if !reflect.DeepEqual(v1, v2) {
+					t.Errorf("A value of '%s' field is different:\n'%v'\n'%v'", f.Name, v1, v2)
+				}
+			}
+		}
+	}
 }
