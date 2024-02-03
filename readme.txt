@@ -8,6 +8,8 @@ func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error
 func Marshal(data any) ([]byte, error)
     Marshal returns the encoding data for the input value.
     It traverses the value recursively.
+func MarshalIndent(data any, prefix, indent string) ([]byte, error)
+    MarshalIndent is like Marshal but applies Indent to format the output.
 func Unmarshal(data []byte, v any) error
     Unmarshal parses the encoded data and stores the result in v. If v is nil or
     not a pointer, Unmarshal returns an InvalidArgumentError.

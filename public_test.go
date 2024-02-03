@@ -873,7 +873,7 @@ func TestIndentPrefix(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	want := `##{
+	want := `{
 ##  Method GET
 ##  URL {
 ##    Scheme https
@@ -902,5 +902,46 @@ func TestIndentPrefix(t *testing.T) {
 	out := dst.String()
 	if out != want {
 		t.Errorf("[Indent] in: %s; out: %s; want: %s", enc, out, want)
+	}
+}
+
+func TestMarshalIndent(t *testing.T) {
+	req, err := http.NewRequest("GET", "https://google.com", nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	enc, err := MarshalIndent(req, "\t", "\t")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	want := "{\n" +
+		"\t\tMethod GET\n" +
+		"\t\tURL {\n" +
+		"\t\t\tScheme https\n" +
+		"\t\t\tOpaque \n" +
+		"\t\t\tHost google.com\n" +
+		"\t\t\tPath \n" +
+		"\t\t\tRawPath \n" +
+		"\t\t\tOmitHost false\n" +
+		"\t\t\tForceQuery false\n" +
+		"\t\t\tRawQuery \n" +
+		"\t\t\tFragment \n" +
+		"\t\t\tRawFragment \n" +
+		"\t\t}\n" +
+		"\t\tProto HTTP/1.1\n" +
+		"\t\tProtoMajor 1\n" +
+		"\t\tProtoMinor 1\n" +
+		"\t\tHeader {\n" +
+		"\t\t}\n" +
+		"\t\tContentLength 0\n" +
+		"\t\tClose false\n" +
+		"\t\tHost google.com\n" +
+		"\t\tRemoteAddr \n" +
+		"\t\tRequestURI \n" +
+		"\t}\n"
+	if string(enc) != want {
+		t.Errorf("[MarshalIndent] in: %s; out: %s; want: %s", enc, string(enc), want)
 	}
 }

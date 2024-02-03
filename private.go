@@ -418,6 +418,7 @@ func isValueNil(v reflect.Value) bool {
 }
 
 func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
+	first := true
 	level := 0
 	origLen := len(dst)
 	currIndent := prefix
@@ -438,7 +439,12 @@ func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
 				err = &InvalidEntityError{"Indent", string(item), fmt.Errorf("the data of an array must be started from a new line")}
 				break
 			}
-			dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+			if first {
+				first = false
+				dst = append(dst, []byte(string(item)+"\n")...)
+			} else {
+				dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+			}
 			level++
 			currIndent += indent
 		case 93, 125: // ], }
@@ -459,7 +465,12 @@ func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
 				err = &InvalidEntityError{"Indent", string(item), fmt.Errorf("the data of an entity must be started from a new line")}
 				break
 			}
-			dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+			if first {
+				first = false
+				dst = append(dst, []byte(string(item)+"\n")...)
+			} else {
+				dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+			}
 			level++
 			currIndent += indent
 		default:
@@ -472,7 +483,12 @@ func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
 					up = true
 				}
 			}
-			dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+			if first {
+				first = false
+				dst = append(dst, []byte(string(item)+"\n")...)
+			} else {
+				dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+			}
 			if up {
 				level++
 				currIndent += indent

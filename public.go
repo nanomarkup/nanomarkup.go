@@ -48,6 +48,20 @@ func Marshal(data any) ([]byte, error) {
 	}
 }
 
+// MarshalIndent is like Marshal but applies Indent to format the output.
+func MarshalIndent(data any, prefix, indent string) ([]byte, error) {
+	enc, err := Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	dst := bytes.Buffer{}
+	if err = Indent(&dst, enc, prefix, indent); err != nil {
+		return nil, err
+	} else {
+		return dst.Bytes(), nil
+	}
+}
+
 // Unmarshal parses the encoded data and stores the result in v.
 // If v is nil or not a pointer, Unmarshal returns an InvalidArgumentError.
 //
