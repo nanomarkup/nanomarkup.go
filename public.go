@@ -26,7 +26,7 @@ func Marshal(data any) ([]byte, error) {
 	case reflect.Complex64, reflect.Complex128:
 		return []byte(strconv.FormatComplex(val.Complex(), 'g', -1, 128)), nil
 	case reflect.String:
-		return []byte(strings.TrimLeft(val.String(), " ")), nil
+		return []byte(strings.TrimLeft(val.String(), " \t")), nil
 	case reflect.Bool:
 		return []byte(strconv.FormatBool(val.Bool())), nil
 	case reflect.Slice, reflect.Array:
@@ -69,6 +69,18 @@ func Unmarshal(data []byte, v any) error {
 	d.data = bytes.Split(data, []byte("\n"))
 	d.reset()
 	return unmarshal(&d, elem, undefined)
+}
+
+// Indent function appends to `dst` the nano-encoded source (`src`) in an indented format.
+// The data appended to dst does not begin with the prefix nor any indentation,
+// to make it easier to embed inside other formatted JSON data.
+func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error {
+	// specify a growth factor to reduce probability of allocation memory
+	dst.Grow(int(float64(len(src))*float64(len(prefix)+len(indent)+1)/10 + 1))
+	b := dst.AvailableBuffer()
+	b, err := appendIndent(b, src, prefix, indent)
+	dst.Write(b)
+	return err
 }
 
 // InvalidArgumentError describes an error that occurs when an invalid argument is provided.

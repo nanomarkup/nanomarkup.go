@@ -1,6 +1,8 @@
 package nanomarkup
 
 import (
+	"bytes"
+	"encoding"
 	"fmt"
 	"net/http"
 	"testing"
@@ -37,8 +39,8 @@ func TestEmptyMarshal(t *testing.T) {
 		{v: struct{}{}, want: "{\n}\n"},
 		{v: struct{ M string }{"gopher"}, want: "{\nM gopher\n}\n"},
 		{v: struct{ M testing.B }{}, want: "{\nM {\n}\n}\n"},
-		// {v: struct{ M encoding.TextMarshaler }{}, want: "{\nM \n}\n"},
-		// {v: struct{ M any }{(nil)}, want: "{\nM \n}\n"},
+		{v: struct{ M encoding.TextMarshaler }{}, want: "{\n}\n"},
+		{v: struct{ M any }{(nil)}, want: "{\n}\n"},
 	}
 
 	for _, item := range testCases {
@@ -476,10 +478,14 @@ func TestArrayUnmarshal(t *testing.T) {
 	err := Unmarshal([]byte("[\n]"), &array)
 	mes := ""
 	if len(array) > 0 {
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", "[]", array, [0]int{})
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", "[]", array, [0]int{})
 	}
 	if err != nil {
-		mes += "; error: " + err.Error()
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
 	}
 	if mes != "" {
 		t.Error(mes)
@@ -498,9 +504,13 @@ func TestArrayUnmarshal(t *testing.T) {
 		if err == nil && rai == item.want {
 			continue
 		}
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", item.v, rai, item.want)
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", item.v, rai, item.want)
 		if err != nil {
-			mes += "; error: " + err.Error()
+			if mes == "" {
+				mes = "[Unmarshal]: " + err.Error()
+			} else {
+				mes += "; error: " + err.Error()
+			}
 		}
 		t.Error(mes)
 	}
@@ -517,9 +527,13 @@ func TestArrayUnmarshal(t *testing.T) {
 		if err == nil && ras == item.want {
 			continue
 		}
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", item.v, ras, item.want)
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", item.v, ras, item.want)
 		if err != nil {
-			mes += "; error: " + err.Error()
+			if mes == "" {
+				mes = "[Unmarshal]: " + err.Error()
+			} else {
+				mes += "; error: " + err.Error()
+			}
 		}
 		t.Error(mes)
 	}
@@ -531,10 +545,14 @@ func TestSliceUnmarshal(t *testing.T) {
 	err := Unmarshal([]byte("[\n]"), &slice)
 	mes := ""
 	if len(slice) > 0 {
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", "[]", slice, []int{})
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", "[]", slice, []int{})
 	}
 	if err != nil {
-		mes += "; error: " + err.Error()
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
 	}
 	if mes != "" {
 		t.Error(mes)
@@ -562,9 +580,13 @@ func TestSliceUnmarshal(t *testing.T) {
 		if err == nil && pass {
 			continue
 		}
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", item.v, rsi, item.want)
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", item.v, rsi, item.want)
 		if err != nil {
-			mes += "; error: " + err.Error()
+			if mes == "" {
+				mes = "[Unmarshal]: " + err.Error()
+			} else {
+				mes += "; error: " + err.Error()
+			}
 		}
 		t.Error(mes)
 	}
@@ -591,9 +613,13 @@ func TestSliceUnmarshal(t *testing.T) {
 		if err == nil && pass {
 			continue
 		}
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", item.v, rss, item.want)
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", item.v, rss, item.want)
 		if err != nil {
-			mes += "; error: " + err.Error()
+			if mes == "" {
+				mes = "[Unmarshal]: " + err.Error()
+			} else {
+				mes += "; error: " + err.Error()
+			}
 		}
 		t.Error(mes)
 	}
@@ -605,10 +631,14 @@ func TestMapUnmarshal(t *testing.T) {
 	err := Unmarshal([]byte("{\n}"), &m)
 	mes := ""
 	if len(m) > 0 {
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", "[]", m, []int{})
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", "[]", m, []int{})
 	}
 	if err != nil {
-		mes += "; error: " + err.Error()
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
 	}
 	if mes != "" {
 		t.Error(mes)
@@ -636,9 +666,13 @@ func TestMapUnmarshal(t *testing.T) {
 		if err == nil && pass {
 			continue
 		}
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", item.v, rmi, item.want)
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", item.v, rmi, item.want)
 		if err != nil {
-			mes += "; error: " + err.Error()
+			if mes == "" {
+				mes = "[Unmarshal]: " + err.Error()
+			} else {
+				mes += "; error: " + err.Error()
+			}
 		}
 		t.Error(mes)
 	}
@@ -664,9 +698,13 @@ func TestMapUnmarshal(t *testing.T) {
 		if err == nil && pass {
 			continue
 		}
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", item.v, rms, item.want)
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", item.v, rms, item.want)
 		if err != nil {
-			mes += "; error: " + err.Error()
+			if mes == "" {
+				mes = "[Unmarshal]: " + err.Error()
+			} else {
+				mes += "; error: " + err.Error()
+			}
 		}
 		t.Error(mes)
 	}
@@ -691,10 +729,14 @@ func TestStructUnmarshal(t *testing.T) {
 	mes := ""
 	if rv1.TestInt != want1.TestInt &&
 		rv1.TestStr != want1.TestStr {
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", st1, rv1, want1)
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", st1, rv1, want1)
 	}
 	if err != nil {
-		mes += "; error: " + err.Error()
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
 	}
 	if mes != "" {
 		t.Error(mes)
@@ -704,10 +746,46 @@ func TestStructUnmarshal(t *testing.T) {
 	mes = ""
 	if rv2.T1.TestInt != want2.T1.TestInt &&
 		rv2.T1.TestStr != want2.T1.TestStr {
-		mes = fmt.Sprintf("[Marshal] in: %s; out: %v; want: %v", st2, rv2, want2)
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", st2, rv2, want2)
 	}
 	if err != nil {
-		mes += "; error: " + err.Error()
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestTabUnmarshal(t *testing.T) {
+	type t1 struct {
+		TestInt int
+		TestStr string
+	}
+	type t2 struct {
+		T1 t1
+	}
+	rv1 := t1{}
+	want1 := t1{7, "test 7"}
+	st2 := "{\n\tT1 {\n\t\tTestInt 7\n\t\tTestStr test 7\n\t}\n}\n"
+	rv2 := t2{rv1}
+	want2 := t2{want1}
+
+	err := Unmarshal([]byte(st2), &rv2)
+	mes := ""
+	if rv2.T1.TestInt != want2.T1.TestInt &&
+		rv2.T1.TestStr != want2.T1.TestStr {
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", st2, rv2, want2)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
 	}
 	if mes != "" {
 		t.Error(mes)
@@ -729,4 +807,100 @@ func TestHTTPRequestStruct(t *testing.T) {
 		t.Error(err)
 	}
 	testStructs(t, req, dec)
+}
+
+func TestIndentIndent(t *testing.T) {
+	req, err := http.NewRequest("GET", "https://google.com", nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	enc, err := Marshal(req)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	dst := bytes.Buffer{}
+	if err = Indent(&dst, enc, "", "    "); err != nil {
+		t.Error(err)
+		return
+	}
+	want := `{
+    Method GET
+    URL {
+        Scheme https
+        Opaque 
+        Host google.com
+        Path 
+        RawPath 
+        OmitHost false
+        ForceQuery false
+        RawQuery 
+        Fragment 
+        RawFragment 
+    }
+    Proto HTTP/1.1
+    ProtoMajor 1
+    ProtoMinor 1
+    Header {
+    }
+    ContentLength 0
+    Close false
+    Host google.com
+    RemoteAddr 
+    RequestURI 
+}
+`
+	out := dst.String()
+	if out != want {
+		t.Errorf("[Indent] in: %s; out: %s; want: %s", enc, out, want)
+	}
+}
+
+func TestIndentPrefix(t *testing.T) {
+	req, err := http.NewRequest("GET", "https://google.com", nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	enc, err := Marshal(req)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	dst := bytes.Buffer{}
+	if err = Indent(&dst, enc, "##", "  "); err != nil {
+		t.Error(err)
+		return
+	}
+	want := `##{
+##  Method GET
+##  URL {
+##    Scheme https
+##    Opaque 
+##    Host google.com
+##    Path 
+##    RawPath 
+##    OmitHost false
+##    ForceQuery false
+##    RawQuery 
+##    Fragment 
+##    RawFragment 
+##  }
+##  Proto HTTP/1.1
+##  ProtoMajor 1
+##  ProtoMinor 1
+##  Header {
+##  }
+##  ContentLength 0
+##  Close false
+##  Host google.com
+##  RemoteAddr 
+##  RequestURI 
+##}
+`
+	out := dst.String()
+	if out != want {
+		t.Errorf("[Indent] in: %s; out: %s; want: %s", enc, out, want)
+	}
 }

@@ -140,7 +140,7 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 	ind := -1
 	item, ok := d.next()
 	for ; ok; item, ok = d.next() {
-		item = bytes.TrimLeft(item, " ")
+		item = bytes.TrimLeft(item, " \t")
 		if len(item) == 0 {
 			continue
 		}
@@ -202,13 +202,13 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 				}
 				v.Set(reflect.Append(v, val))
 			case reflect.Map, reflect.Struct:
-				s := strings.TrimLeft(string(item), " ")
+				s := strings.TrimLeft(string(item), " \t")
 				ks := ""
 				vs := ""
 				space := strings.Index(s, " ")
 				if space > 0 {
 					ks = s[:space]
-					vs = strings.TrimLeft(s[space+1:], " ")
+					vs = strings.TrimLeft(s[space+1:], " \t")
 				} else {
 					ks = s
 				}
@@ -415,4 +415,72 @@ func isValueNil(v reflect.Value) bool {
 	default:
 		return false
 	}
+}
+
+func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
+	level := 0
+	origLen := len(dst)
+	currIndent := prefix
+	var err error
+	d := decoder{}
+	d.data = bytes.Split(src, []byte("\n"))
+	d.reset()
+	item, ok := d.next()
+	for ; ok; item, ok = d.next() {
+		item = bytes.TrimLeft(item, " \t")
+		if len(item) == 0 {
+			continue
+		}
+		switch item[0] {
+		case 91: // [
+			val := item[1:]
+			if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
+				err = &InvalidEntityError{"Indent", string(item), fmt.Errorf("the data of an array must be started from a new line")}
+				break
+			}
+			dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+			level++
+			currIndent += indent
+		case 93, 125: // ], }
+			if level == 0 {
+				err = &InvalidEntityError{"Indent", string(item), fmt.Errorf("invalid data")}
+				break
+			}
+			level--
+			if level == 0 {
+				currIndent = prefix
+			} else {
+				currIndent = prefix + strings.Repeat(indent, level)
+			}
+			dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+		case 123: // {
+			val := item[1:]
+			if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
+				err = &InvalidEntityError{"Indent", string(item), fmt.Errorf("the data of an entity must be started from a new line")}
+				break
+			}
+			dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+			level++
+			currIndent += indent
+		default:
+			up := false
+			str := string(item)
+			space := strings.Index(str, " ")
+			if space > 0 {
+				str = strings.TrimLeft(str[space+1:], " \t")
+				if len(str) > 0 && (str[0] == 91 || str[0] == 123) { // [, {
+					up = true
+				}
+			}
+			dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+			if up {
+				level++
+				currIndent += indent
+			}
+		}
+	}
+	if err != nil {
+		return dst[:origLen], err
+	}
+	return dst, nil
 }
