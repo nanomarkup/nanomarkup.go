@@ -3,10 +3,18 @@ A Go implementation of the Nano Markup language
 
 ## FUNCTIONS
 ```
+func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error
+```
+Indent function appends to `dst` the nano-encoded source (`src`) in an indented format. The data appended to dst does not begin with the prefix nor any indentation, to make it easier to embed inside other formatted nano-encoded data.
+```
 func Marshal(data any) ([]byte, error)
 ```
 Marshal returns the encoding data for the input value.
 It traverses the value recursively.
+```
+func MarshalIndent(data any, prefix, indent string) ([]byte, error)
+```
+MarshalIndent is like Marshal but applies Indent to format the output.
 ```
 func Unmarshal(data []byte, v any) error
 ```
