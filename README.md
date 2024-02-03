@@ -3,6 +3,10 @@ A Go implementation of the Nano Markup language
 
 ## FUNCTIONS
 ```
+func Compact(dst *bytes.Buffer, src []byte) error
+```
+Compact appends the nano-encoded src to dst, eliminating insignificant space characters.
+```
 func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error
 ```
 Indent function appends to `dst` the nano-encoded source (`src`) in an indented format. The data appended to dst does not begin with the prefix nor any indentation, to make it easier to embed inside other formatted nano-encoded data.

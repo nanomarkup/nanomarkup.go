@@ -945,3 +945,59 @@ func TestMarshalIndent(t *testing.T) {
 		t.Errorf("[MarshalIndent] in: %s; out: %s; want: %s", enc, string(enc), want)
 	}
 }
+
+func TestCompact(t *testing.T) {
+	req, err := http.NewRequest("GET", "https://google.com", nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	enc, err := Marshal(req)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	ind := bytes.Buffer{}
+	if err = Indent(&ind, enc, "\t", " "); err != nil {
+		t.Error(err)
+		return
+	}
+	dst := bytes.Buffer{}
+	if err = Compact(&dst, ind.Bytes()); err != nil {
+		t.Error(err)
+		return
+	}
+	want := `{
+Method GET
+URL {
+Scheme https
+Opaque 
+Host google.com
+Path 
+RawPath 
+OmitHost false
+ForceQuery false
+RawQuery 
+Fragment 
+RawFragment 
+}
+Proto HTTP/1.1
+ProtoMajor 1
+ProtoMinor 1
+Header {
+}
+ContentLength 0
+Close false
+Host google.com
+RemoteAddr 
+RequestURI 
+}
+`
+	out := dst.String()
+	if out != want {
+		t.Errorf("[Compact] in: %s; out: %s; want: %s", ind.String(), out, want)
+	}
+	if out != string(enc) {
+		t.Errorf("[Compact] in: %s; out: %s; want: %s", ind.String(), out, string(enc))
+	}
+}

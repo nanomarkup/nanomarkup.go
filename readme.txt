@@ -1,10 +1,13 @@
 package nanomarkup // import "nanomarkup.go"
 FUNCTIONS
+func Compact(dst *bytes.Buffer, src []byte) error
+    Compact appends the nano-encoded src to dst, eliminating insignificant space
+    characters.
 func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error
     Indent function appends to `dst` the nano-encoded source (`src`) in an
     indented format. The data appended to dst does not begin with the prefix
-    nor any indentation, to make it easier to embed inside other formatted JSON
-    data.
+    nor any indentation, to make it easier to embed inside other formatted
+    nano-encoded data.
 func Marshal(data any) ([]byte, error)
     Marshal returns the encoding data for the input value.
     It traverses the value recursively.
