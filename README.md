@@ -1,5 +1,4 @@
-# nanomarkup.go
-A Go implementation of the [Nano Markup language](https://nanomarkup.github.io/)
+<p align="center">A Go implementation of the [Nano Markup language](https://nanomarkup.github.io/)</p>
 
 ## FUNCTIONS
 ```
