@@ -1,4 +1,4 @@
-<p align="center">A Go implementation of the [Nano Markup language](https://nanomarkup.github.io/)</p>
+<h2 align="center">A Go implementation of the [Nano Markup language](https://nanomarkup.github.io/)</h2>
 
 ## FUNCTIONS
 ```
