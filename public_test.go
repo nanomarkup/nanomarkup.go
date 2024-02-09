@@ -92,6 +92,41 @@ func TestStringMarshal(t *testing.T) {
 	}
 }
 
+func TestMultiLineMarshal(t *testing.T) {
+	// test a string
+	sin := `testing
+a multi
+line
+value`
+	swant := "`\n" + sin + "\n`\n"
+
+	out, err := Marshal(sin)
+	if s := checkMarshal(sin, out, swant, err); s != "" {
+		t.Error(s)
+	}
+
+	// test an array/slice
+	ain := []string{sin}
+	awant := "[\n`\n" + sin + "\n`\n]\n"
+
+	out, err = Marshal(ain)
+	if s := checkMarshal(ain, out, awant, err); s != "" {
+		t.Error(s)
+	}
+
+	// test a struct
+	type st struct {
+		MultiValue string
+	}
+	tin := st{sin}
+	twant := "{\nMultiValue `\n" + sin + "\n`\n}\n"
+
+	out, err = Marshal(tin)
+	if s := checkMarshal(tin, out, twant, err); s != "" {
+		t.Error(s)
+	}
+}
+
 func TestBooleanMarshal(t *testing.T) {
 	testCases := []struct {
 		v    any
@@ -451,6 +486,63 @@ func TestStringUnmarshal(t *testing.T) {
 		if s := checkUnmarshalString(item.v, *r, item.want, err); s != "" {
 			t.Error(s)
 		}
+	}
+}
+
+func TestMultiLineUnmarshal(t *testing.T) {
+	// test a string
+	swant := `testing
+a multi
+line
+value`
+	sin := "`\n" + swant + "\n`\n"
+	sout := ""
+	err := Unmarshal([]byte(sin), &sout)
+	if s := checkUnmarshalString(sin, sout, swant, err); s != "" {
+		t.Error(s)
+	}
+
+	// test an array/slice
+	ain := "[\n`\n" + swant + "\n`\n]\n"
+	awant := []string{"testing\na multi\nline\nvalue"}
+	aout := []string{}
+	err = Unmarshal([]byte(ain), &aout)
+	pass := len(aout) == len(awant)
+	if pass {
+		for i := range aout {
+			if aout[i] != awant[i] {
+				pass = false
+				break
+			}
+		}
+	}
+	mes := ""
+	if !pass {
+		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", ain, aout, awant)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+
+	// test a struct
+	type st struct {
+		MultiValue string
+	}
+	tin := "{\nMultiValue `\n" + swant + "\n`\n}\n"
+	twant := st{swant}
+	tout := st{}
+	err = Unmarshal([]byte(tin), &tout)
+	if err != nil {
+		t.Error(err)
+	} else {
+		testStructs(t, &tout, &twant)
 	}
 }
 
@@ -902,6 +994,44 @@ func TestIndentPrefix(t *testing.T) {
 	out := dst.String()
 	if out != want {
 		t.Errorf("[Indent] in: %s; out: %s; want: %s", enc, out, want)
+	}
+}
+
+func TestIndentMultiline(t *testing.T) {
+	// test a string
+	s := `testing
+a multi
+line
+value`
+	in := "`\n" + s + "\n`\n"
+	want := "`\n" + `##testing
+##a multi
+##line
+##value` + "\n##`\n"
+	dst := bytes.Buffer{}
+	if err := Indent(&dst, []byte(in), "##", "  "); err != nil {
+		t.Error(err)
+		return
+	}
+	out := dst.String()
+	if out != want {
+		t.Errorf("[Indent] in: %s; out: %s; want: %s", in, out, want)
+	}
+
+	// test a struct
+	in = "{\nMultiLine `\n" + s + "\n`\n}\n"
+	want = "{\n##  MultiLine `\n" + `##testing
+##a multi
+##line
+##value` + "\n##  `\n##}\n"
+	dst = bytes.Buffer{}
+	if err := Indent(&dst, []byte(in), "##", "  "); err != nil {
+		t.Error(err)
+		return
+	}
+	out = dst.String()
+	if out != want {
+		t.Errorf("[Indent] in: %s; out: %s; want: %s", in, out, want)
 	}
 }
 

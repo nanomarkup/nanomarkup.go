@@ -43,7 +43,16 @@ func marshal(data any) ([]byte, error) {
 	case reflect.Complex64, reflect.Complex128:
 		return []byte(strconv.FormatComplex(val.Complex(), 'g', -1, 128)), nil
 	case reflect.String:
-		return []byte(strings.TrimSpace(val.String())), nil
+		lines := strings.Split(val.String(), "\n")
+		if len(lines) == 1 {
+			return []byte(strings.TrimSpace(val.String())), nil
+		} else {
+			res := "`\n"
+			for _, it := range lines {
+				res += it + "\n"
+			}
+			return []byte(res + "`\n"), nil
+		}
 	case reflect.Bool:
 		return []byte(strconv.FormatBool(val.Bool())), nil
 	case reflect.Slice, reflect.Array:
@@ -188,6 +197,11 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 				return &InvalidEntityError{"Unmarshal", "", fmt.Errorf("'}' is missing")}
 			}
 		default:
+			item, err := unmarshalMultilineValue(d, item)
+			if err != nil {
+				return err
+			}
+
 			switch v.Kind() {
 			case reflect.Array:
 				ind++
@@ -202,28 +216,34 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 				}
 				v.Set(reflect.Append(v, val))
 			case reflect.Map, reflect.Struct:
-				s := strings.TrimLeft(string(item), " \t")
-				ks := ""
-				vs := ""
-				space := strings.Index(s, " ")
+				s := bytes.TrimLeft(item, " \t")
+				var ks []byte
+				var vs []byte
+				space := bytes.Index(s, []byte(" "))
 				if space > 0 {
 					ks = s[:space]
-					vs = strings.TrimLeft(s[space+1:], " \t")
+					vs = bytes.TrimLeft(s[space+1:], " \t")
 				} else {
 					ks = s
+					vs = []byte{}
 				}
+				vs, err := unmarshalMultilineValue(d, vs)
+				if err != nil {
+					return err
+				}
+
 				if v.Kind() == reflect.Map {
 					kv := reflect.New(v.Type().Key()).Elem()
 					vv := reflect.New(v.Type().Elem()).Elem()
-					if e := unmarshalValue(kv, ks); e != nil {
+					if e := unmarshalValue(kv, string(ks)); e != nil {
 						return e
 					}
-					if e := unmarshalValue(vv, vs); e != nil {
+					if e := unmarshalValue(vv, string(vs)); e != nil {
 						return e
 					}
 					v.SetMapIndex(kv, vv)
 				} else {
-					if field := v.FieldByName(ks); field.IsValid() {
+					if field := v.FieldByName(string(ks)); field.IsValid() {
 						var vv reflect.Value
 						if field.Type().Kind() == reflect.Pointer {
 							if field.Type().Elem().Kind() == reflect.Map {
@@ -262,7 +282,7 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 									}
 								}
 							default:
-								if e := unmarshalValue(vv, vs); e != nil {
+								if e := unmarshalValue(vv, string(vs)); e != nil {
 									return e
 								}
 							}
@@ -408,6 +428,43 @@ func unmarshalValue(v reflect.Value, s string) error {
 	}
 }
 
+func unmarshalMultilineValue(d *decoder, item []byte) ([]byte, error) {
+	if len(item) > 0 && item[0] == 96 { // `
+		// update the item variable by a multi-line value
+		val := item[1:]
+		if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
+			return item, &InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of a multi-line value must be started from a new line")}
+		}
+		mval := []byte{}
+		first := true
+		completed := false
+		item, ok := d.next()
+		for ; ok; item, ok = d.next() {
+			if len(item) == 0 {
+				mval = append(mval, "\n"...)
+			} else if len(item) == 1 && item[0] == 96 { // `
+				completed = true
+				break
+			} else {
+				if !first {
+					mval = append(mval, "\n"...)
+				}
+				mval = append(mval, item...)
+			}
+			if first {
+				first = false
+			}
+		}
+		if completed {
+			return mval, nil
+		} else {
+			return item, &InvalidEntityError{"Unmarshal", "", fmt.Errorf("'`' is missing")}
+		}
+	} else {
+		return item, nil
+	}
+}
+
 func isValueNil(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
@@ -473,14 +530,34 @@ func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
 			}
 			level++
 			currIndent += indent
+		case 96: // `
+			val, err := appendIndentMultiline(&d, prefix, currIndent, first)
+			if err != nil {
+				break
+			}
+			if val != nil {
+				dst = append(dst, val...)
+				first = false
+			}
 		default:
 			up := false
 			str := string(item)
 			space := strings.Index(str, " ")
 			if space > 0 {
 				str = strings.TrimLeft(str[space+1:], " \t")
-				if len(str) > 0 && (str[0] == 91 || str[0] == 123) { // [, {
-					up = true
+				if len(str) > 0 {
+					if str[0] == 91 || str[0] == 123 { // [, {
+						up = true
+					} else if str[0] == 96 { // `
+						val, err := appendIndentMultiline(&d, prefix, currIndent, first)
+						if err != nil {
+							break
+						} else if val != nil {
+							dst = append(dst, val...)
+							first = false
+							continue
+						}
+					}
 				}
 			}
 			if first {
@@ -499,4 +576,62 @@ func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
 		return dst[:origLen], err
 	}
 	return dst, nil
+}
+
+func appendIndentMultiline(d *decoder, prefix, currIndent string, first bool) ([]byte, error) {
+	item, ok := d.curr()
+	if !ok {
+		return nil, nil
+	}
+
+	dst := []byte{}
+	str := string(bytes.TrimLeft(item, " \t"))
+	space := strings.Index(str, " ")
+	if space > 0 {
+		// process key/value data
+		item = []byte(strings.TrimLeft(str[space+1:], " \t"))
+		if len(item) == 0 || item[0] != 96 { // `
+			return nil, nil
+		} else {
+			str = str[:space]
+			if first {
+				dst = append(dst, []byte(str+" ")...)
+			} else {
+				dst = append(dst, []byte(currIndent+str+" ")...)
+				first = true
+			}
+		}
+	} else if item[0] != 96 { // `
+		return nil, nil
+	}
+
+	val := item[1:]
+	if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
+		return nil, &InvalidEntityError{"Indent", string(item), fmt.Errorf("the data of a multi-line value must be started from a new line")}
+	}
+	if first {
+		first = false
+		dst = append(dst, []byte(string(item)+"\n")...)
+	} else {
+		dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+	}
+
+	completed := false
+	item, ok = d.next()
+	for ; ok; item, ok = d.next() {
+		if len(item) == 0 {
+			dst = append(dst, "\n"...)
+		} else if len(item) == 1 && item[0] == 96 { // `
+			completed = true
+			break
+		} else {
+			dst = append(dst, []byte(prefix+string(item)+"\n")...)
+		}
+	}
+	if completed {
+		dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+		return dst, nil
+	} else {
+		return nil, &InvalidEntityError{"Indent", "", fmt.Errorf("'`' is missing")}
+	}
 }

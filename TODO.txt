@@ -1,1 +1,2 @@
-Tests
+- support comment: single comment and multi-line comment
+- support "nano: *" tags like in json implementation

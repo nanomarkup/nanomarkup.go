@@ -26,7 +26,16 @@ func Marshal(data any) ([]byte, error) {
 	case reflect.Complex64, reflect.Complex128:
 		return []byte(strconv.FormatComplex(val.Complex(), 'g', -1, 128)), nil
 	case reflect.String:
-		return []byte(strings.TrimLeft(val.String(), " \t")), nil
+		lines := strings.Split(val.String(), "\n")
+		if len(lines) == 1 {
+			return []byte(strings.TrimLeft(val.String(), " \t")), nil
+		} else {
+			res := "`\n"
+			for _, it := range lines {
+				res += it + "\n"
+			}
+			return []byte(res + "`\n"), nil
+		}
 	case reflect.Bool:
 		return []byte(strconv.FormatBool(val.Bool())), nil
 	case reflect.Slice, reflect.Array:
