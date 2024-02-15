@@ -1131,3 +1131,45 @@ RequestURI
 		t.Errorf("[Compact] in: %s; out: %s; want: %s", ind.String(), out, string(enc))
 	}
 }
+
+func TestNanoTag(t *testing.T) {
+	testCases := []struct {
+		v    any
+		want string
+	}{
+		{v: struct {
+			Field1 int    `nano:"omitempty"`
+			Field2 string `nano:"omitempty"`
+		}{0, ""}, want: "{\n}\n"},
+		{v: struct {
+			Field1 int    `nano:"-,omitempty"`
+			Field2 string `nano:"omitempty,-"`
+		}{1, "1"}, want: "{\n}\n"},
+		{v: struct {
+			Field1 int    `nano:"test1"`
+			Field2 string `nano:"test2"`
+		}{0, ""}, want: "{\ntest1 0\ntest2 \n}\n"},
+		{v: struct {
+			Field1 int    `nano:"omitempty,test1"`
+			Field2 string `nano:"test2,omitempty"`
+			Field3 string `nano:"omitempty,omitempty"`
+		}{0, "", ""}, want: "{\n}\n"},
+		{v: struct {
+			Field1 int `nano:"omitempty"`
+			Field2 int
+			Field3 int `nano:"-"`
+		}{1, 2, 3}, want: "{\nField1 1\nField2 2\n}\n"},
+		{v: struct {
+			Field1 int    `nano:"omitempty"`
+			Field2 string `nano:"omitempty"`
+			Field3 int
+		}{0, "", 3}, want: "{\nField3 3\n}\n"},
+	}
+
+	for _, item := range testCases {
+		out, err := Marshal(item.v)
+		if s := checkMarshal(item.v, out, item.want, err); s != "" {
+			t.Error(s)
+		}
+	}
+}

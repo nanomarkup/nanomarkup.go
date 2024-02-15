@@ -22,6 +22,10 @@ const (
 )
 
 const (
+	nanoTagName string = "nano"
+)
+
+const (
 	errorContextFmt string = "[%s] %s"
 )
 
@@ -92,8 +96,46 @@ func marshalStruct(data any) ([]byte, error) {
 		if isValueNil(fv) {
 			continue
 		}
-		res = append(res, []byte(f.Name+" ")...)
-		v, e := marshal(fv.Interface())
+		data := fv.Interface()
+		name := ""
+		omitempty := false
+		tag, ok := f.Tag.Lookup(nanoTagName)
+		if ok {
+			if tag == "-" {
+				continue
+			} else if tag == "omitempty" {
+				omitempty = true
+			} else {
+				items := strings.Split(tag, ",")
+				l := len(items)
+				if l == 1 {
+					name = tag
+				} else if l > 1 {
+					if items[0] == "omitempty" {
+						name = items[1]
+						omitempty = true
+					} else if items[1] == "omitempty" {
+						name = items[0]
+						omitempty = true
+					} else {
+						name = items[0]
+					}
+				}
+				if name == "-" {
+					continue
+				} else if name == "omitempty" {
+					name = ""
+				}
+			}
+			if omitempty && isEmpty(data) {
+				continue
+			}
+		}
+		if name == "" {
+			name = f.Name
+		}
+		res = append(res, []byte(name+" ")...)
+		v, e := marshal(data)
 		if e != nil {
 			return nil, e
 		}
@@ -462,6 +504,19 @@ func unmarshalMultilineValue(d *decoder, item []byte) ([]byte, error) {
 		}
 	} else {
 		return item, nil
+	}
+}
+
+func isEmpty(v interface{}) bool {
+	if v == nil {
+		return true
+	}
+	val := reflect.ValueOf(v)
+	switch val.Kind() {
+	case reflect.Array, reflect.Slice:
+		return val.Len() == 0
+	default:
+		return val.IsZero()
 	}
 }
 
