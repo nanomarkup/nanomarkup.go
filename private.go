@@ -13,6 +13,8 @@ type decoder struct {
 	index int
 }
 
+type omitEmpty bool
+
 type unmarshalType int64
 
 const (
@@ -22,7 +24,10 @@ const (
 )
 
 const (
-	nanoTagName string = "nano"
+	tagValueDelim    string = ","
+	nanoTagName      string = "nano"
+	nanoTagIgnore    string = "-"
+	nanoTagOmitEmpty string = "omitempty"
 )
 
 const (
@@ -101,29 +106,29 @@ func marshalStruct(data any) ([]byte, error) {
 		omitempty := false
 		tag, ok := f.Tag.Lookup(nanoTagName)
 		if ok {
-			if tag == "-" {
+			if tag == nanoTagIgnore {
 				continue
-			} else if tag == "omitempty" {
+			} else if tag == nanoTagOmitEmpty {
 				omitempty = true
 			} else {
-				items := strings.Split(tag, ",")
+				items := strings.Split(tag, tagValueDelim)
 				l := len(items)
 				if l == 1 {
 					name = tag
 				} else if l > 1 {
-					if items[0] == "omitempty" {
+					if items[0] == nanoTagOmitEmpty {
 						name = items[1]
 						omitempty = true
-					} else if items[1] == "omitempty" {
+					} else if items[1] == nanoTagOmitEmpty {
 						name = items[0]
 						omitempty = true
 					} else {
 						name = items[0]
 					}
 				}
-				if name == "-" {
+				if name == nanoTagIgnore {
 					continue
-				} else if name == "omitempty" {
+				} else if name == nanoTagOmitEmpty {
 					name = ""
 				}
 			}
@@ -285,7 +290,7 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 					}
 					v.SetMapIndex(kv, vv)
 				} else {
-					if field := v.FieldByName(string(ks)); field.IsValid() {
+					if field, omitempty := getField(v, string(ks)); field.IsValid() {
 						var vv reflect.Value
 						if field.Type().Kind() == reflect.Pointer {
 							if field.Type().Elem().Kind() == reflect.Map {
@@ -328,6 +333,9 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 									return e
 								}
 							}
+						}
+						if bool(omitempty) && isEmpty(vv.Interface()) {
+							continue
 						}
 						if field.Type().Kind() == reflect.Pointer {
 							field.Set(vv.Addr())
@@ -526,6 +534,78 @@ func isValueNil(v reflect.Value) bool {
 		return v.IsNil()
 	default:
 		return false
+	}
+}
+
+func getField(src reflect.Value, name string) (reflect.Value, omitEmpty) {
+	rValue := reflect.Value{}
+	var rEmpty omitEmpty = true
+	if src.Kind() != reflect.Struct {
+		return rValue, rEmpty
+	}
+	// nano tag has more priority than a field of struct
+	for _, f := range reflect.VisibleFields(src.Type()) {
+		if !f.IsExported() {
+			continue
+		}
+		fv := src.Field(f.Index[0])
+		if isValueNil(fv) {
+			continue
+		}
+		tag, ok := f.Tag.Lookup(nanoTagName)
+		if !ok || tag == nanoTagIgnore || tag == nanoTagOmitEmpty {
+			continue
+		}
+		items := strings.Split(tag, tagValueDelim)
+		fn := ""
+		l := len(items)
+		if l == 1 {
+			fn = tag
+		} else if l > 1 {
+			if items[0] == nanoTagOmitEmpty {
+				fn = items[1]
+				rEmpty = true
+			} else if items[1] == nanoTagOmitEmpty {
+				fn = items[0]
+				rEmpty = true
+			} else {
+				fn = items[0]
+			}
+		}
+		if fn != nanoTagIgnore && fn != nanoTagOmitEmpty && fn == name {
+			return fv, rEmpty
+		}
+	}
+	// check field
+	sf, ok := src.Type().FieldByName(name)
+	if !ok {
+		return rValue, rEmpty
+	} else {
+		rValue = src.FieldByName(sf.Name)
+		tag, ok := sf.Tag.Lookup(nanoTagName)
+		if !ok {
+			return rValue, false
+		} else if tag == nanoTagIgnore {
+			return reflect.Value{}, false
+		} else if tag == nanoTagOmitEmpty {
+			return rValue, true
+		}
+		items := strings.Split(tag, tagValueDelim)
+		l := len(items)
+		if l == 1 {
+			if tag == nanoTagIgnore {
+				return reflect.Value{}, false
+			} else if tag == nanoTagOmitEmpty {
+				return rValue, true
+			}
+		} else if l > 1 {
+			if items[0] == nanoTagIgnore || items[1] == nanoTagIgnore {
+				return reflect.Value{}, false
+			} else if items[0] == nanoTagOmitEmpty || items[1] == nanoTagOmitEmpty {
+				return rValue, true
+			}
+		}
+		return rValue, false
 	}
 }
 

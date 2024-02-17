@@ -1,2 +1,3 @@
 - support comment: single comment and multi-line comment
-- support "nano: *" tags like in json implementation
+- support a custom behavior for marshaling and unmarshaling data (https://betterstack.com/community/guides/scaling-go/json-in-go/#defining-custom-behavior-for-marshalling-and-unmarshalling-data)
+using MarshalNano() ([]byte, error), UnmarshalNano([]byte) error
