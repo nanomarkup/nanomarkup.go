@@ -37,8 +37,11 @@ type InvalidEntityError struct {
 func (e *InvalidEntityError) Error() string
     Error returns a string representation of the InvalidEntityError.
 type Metadata struct {
-	Comment string
 	// Has unexported fields.
 }
+func CreateMetadata(comment string, multiline bool) *Metadata
+func (m *Metadata) AddComment(value string, multiline bool)
+func (m *Metadata) AddComments(comments []*comment)
 func (m *Metadata) AddField(name string, data *Metadata)
+func (m *Metadata) GetComments() string
 func (m *Metadata) GetField(name string) *Metadata

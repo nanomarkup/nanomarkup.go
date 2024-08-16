@@ -8,9 +8,20 @@ import (
 	"strings"
 )
 
+type comment struct {
+	value     string
+	multiline bool
+}
+
 type Metadata struct {
-	Comment string
-	fields  map[string]*Metadata
+	fields   map[string]*Metadata
+	comments []*comment
+}
+
+func CreateMetadata(comment string, multiline bool) *Metadata {
+	m := Metadata{}
+	m.AddComment(comment, multiline)
+	return &m
 }
 
 // Marshal returns the encoding data for the input value.
@@ -23,8 +34,16 @@ func Marshal(data any, meta *Metadata) ([]byte, error) {
 	}
 	out := []byte("")
 	var err error = nil
-	if meta != nil && meta.Comment != "" {
-		out = append(out, []byte(commentOpCode+meta.Comment+"\n")...)
+	if meta != nil && len(meta.comments) > 0 {
+		for _, v := range meta.comments {
+			if v.multiline {
+
+			} else if v.value == "" {
+				out = append(out, []byte("\n")...)
+			} else {
+				out = append(out, []byte(commentOpCode+v.value+"\n")...)
+			}
+		}
 	}
 	switch val.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:

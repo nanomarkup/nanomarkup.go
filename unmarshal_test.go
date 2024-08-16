@@ -746,10 +746,10 @@ func TestMetaIntUnmarshal(t *testing.T) {
 	comment := " A Birthday date"
 	in := fmt.Sprintf("//%s\n%d\n", comment, want)
 	mout := Metadata{}
-	mwant := Metadata{Comment: comment}
+	mwant := CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := checkUnmarshalInt(in, out, want, err)
-	if mout.Comment != mwant.Comment {
+	if mout.GetComments() != mwant.GetComments() {
 		if mes == "" {
 			mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
 		} else {
@@ -774,10 +774,10 @@ func TestMetaStringUnmarshal(t *testing.T) {
 	in := fmt.Sprintf("//%s\n%s\n", comment, want)
 	out := ""
 	mout := Metadata{}
-	mwant := Metadata{Comment: comment}
+	mwant := CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := checkUnmarshalString(in, out, want, err)
-	if mout.Comment != mwant.Comment {
+	if mout.GetComments() != mwant.GetComments() {
 		if mes == "" {
 			mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
 		} else {
@@ -805,10 +805,10 @@ value`
 	in := fmt.Sprintf("//%s\n`\n%s\n`\n", comment, want)
 	out := ""
 	mout := Metadata{}
-	mwant := Metadata{Comment: comment}
+	mwant := CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := checkUnmarshalString(in, out, want, err)
-	if mout.Comment != mwant.Comment {
+	if mout.GetComments() != mwant.GetComments() {
 		if mes == "" {
 			mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
 		} else {
@@ -833,10 +833,10 @@ func TestMetaBooleanUnmarshal(t *testing.T) {
 	in := fmt.Sprintf("//%s\n%t\n", comment, want)
 	out := false
 	mout := Metadata{}
-	mwant := Metadata{Comment: comment}
+	mwant := CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := checkUnmarshalBool(in, out, want, err)
-	if mout.Comment != mwant.Comment {
+	if mout.GetComments() != mwant.GetComments() {
 		if mes == "" {
 			mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
 		} else {
@@ -861,10 +861,10 @@ func TestMetaArrayUnmarshal(t *testing.T) {
 	in := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
 	out := [3]int{}
 	mout := Metadata{}
-	mwant := Metadata{Comment: comment}
+	mwant := CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := ""
-	if out != want || mout.Comment != mwant.Comment {
+	if out != want || mout.GetComments() != mwant.GetComments() {
 		mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
 	}
 	if err != nil {
@@ -885,7 +885,7 @@ func TestMetaSliceUnmarshal(t *testing.T) {
 	in := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
 	out := []int{}
 	mout := Metadata{}
-	mwant := Metadata{Comment: comment}
+	mwant := CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := ""
 	pass := len(want) == len(out)
@@ -897,7 +897,7 @@ func TestMetaSliceUnmarshal(t *testing.T) {
 			}
 		}
 	}
-	if !pass || mout.Comment != mwant.Comment {
+	if !pass || mout.GetComments() != mwant.GetComments() {
 		mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
 	}
 	if err != nil {
@@ -918,7 +918,7 @@ func TestMetaMapUnmarshal(t *testing.T) {
 	in := fmt.Sprintf("//%s\n{\n1 1\n2 2\n3 3\n}\n", comment)
 	out := map[int]int{}
 	mout := Metadata{}
-	mwant := Metadata{Comment: comment}
+	mwant := CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := ""
 	pass := len(want) == len(out)
@@ -930,7 +930,7 @@ func TestMetaMapUnmarshal(t *testing.T) {
 			}
 		}
 	}
-	if !pass || mout.Comment != mwant.Comment {
+	if !pass || mout.GetComments() != mwant.GetComments() {
 		mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
 	}
 	if err != nil {
@@ -963,10 +963,10 @@ Year 2024
 }
 `
 	want := t1{0, "Hi!", "", 2024}
-	mwant := Metadata{Comment: " Object's comment"}
-	mwant.AddField("Field1", &Metadata{Comment: " Testing a comment..."})
-	mwant.AddField("Field2", &Metadata{Comment: " It cannot be empty"})
-	mwant.AddField("Field4", &Metadata{Comment: " Current year is"})
+	mwant := CreateMetadata(" Object's comment", false)
+	mwant.AddField("Field1", CreateMetadata(" Testing a comment...", false))
+	mwant.AddField("Field2", CreateMetadata(" It cannot be empty", false))
+	mwant.AddField("Field4", CreateMetadata(" Current year is", false))
 	out := t1{}
 	mout := Metadata{}
 	err := Unmarshal([]byte(in), &out, &mout)
@@ -979,11 +979,43 @@ Year 2024
 		out.Field2 != want.Field2 ||
 		out.Field3 != want.Field3 ||
 		out.Field4 != want.Field4 ||
-		mout.Comment != mwant.Comment ||
-		f1 == nil || f1.Comment != mwant.GetField("Field1").Comment ||
-		f2 == nil || f2.Comment != mwant.GetField("Field2").Comment ||
-		f4 == nil || f4.Comment != mwant.GetField("Field4").Comment {
+		mout.GetComments() != mwant.GetComments() ||
+		f1 == nil || f1.GetComments() != mwant.GetField("Field1").GetComments() ||
+		f2 == nil || f2.GetComments() != mwant.GetField("Field2").GetComments() ||
+		f4 == nil || f4.GetComments() != mwant.GetField("Field4").GetComments() {
 		mes = fmt.Sprintf("[Unmarshal] in: %s\nout: %v; meta: %v\nwant: %v; meta: %v", in, out, mout, want, mwant)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestCommentsUnmarshal(t *testing.T) {
+	want := "Hello World!"
+	comment1 := " First comment"
+	comment2 := ""
+	comment3 := " Second comment"
+	in := fmt.Sprintf("//%s\n%s\n//%s\n%s\n", comment1, comment2, comment3, want)
+	out := ""
+	mout := Metadata{}
+	mwant := CreateMetadata(comment1, false)
+	mwant.AddComment(comment2, false)
+	mwant.AddComment(comment3, false)
+	err := Unmarshal([]byte(in), &out, &mout)
+	mes := checkUnmarshalString(in, out, want, err)
+	if mout.GetComments() != mwant.GetComments() {
+		if mes == "" {
+			mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
+		} else {
+			mes = fmt.Sprintf("; out meta: %v\nwant meta: %v", mout, mwant)
+		}
 	}
 	if err != nil {
 		if mes == "" {

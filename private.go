@@ -146,8 +146,16 @@ func marshalStruct(data any, meta *Metadata) ([]byte, error) {
 		var fmeta *Metadata = nil
 		if meta != nil {
 			fmeta := meta.GetField(f.Name)
-			if fmeta != nil && fmeta.Comment != "" {
-				res = append(res, []byte(commentOpCode+fmeta.Comment+"\n")...)
+			if fmeta != nil && len(fmeta.comments) > 0 {
+				for _, v := range fmeta.comments {
+					if v.multiline {
+
+					} else if v.value == "" {
+						res = append(res, []byte("\n")...)
+					} else {
+						res = append(res, []byte(commentOpCode+v.value+"\n")...)
+					}
+				}
 			}
 		}
 		res = append(res, []byte(name+" ")...)
@@ -209,10 +217,14 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType, meta *Metadata) 
 	}
 	ind := -1
 	item, ok := d.next()
-	comment := ""
+	comments := []*comment{}
+	commentInProgress := false
 	for ; ok; item, ok = d.next() {
 		item = bytes.TrimLeft(item, " \t")
 		if len(item) == 0 {
+			if commentInProgress && meta != nil {
+				comments = append(comments, &comment{"", false})
+			}
 			continue
 		}
 		switch item[0] {
@@ -224,11 +236,11 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType, meta *Metadata) 
 			if curr == undefined {
 				// set the current type and continue the parsing the rest of data
 				curr = array
-				if comment != "" {
+				if len(comments) > 0 {
 					if meta != nil {
-						meta.Comment = comment
+						meta.AddComments(comments)
 					}
-					comment = ""
+					comments = []*comment{}
 				}
 			} else {
 				// it is an internal array, parse it using other thread/loop
@@ -251,11 +263,11 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType, meta *Metadata) 
 			if curr == undefined {
 				// set the current type and continue the parsing the rest of data
 				curr = entity
-				if comment != "" {
+				if len(comments) > 0 {
 					if meta != nil {
-						meta.Comment = comment
+						meta.AddComments(comments)
 					}
-					comment = ""
+					comments = []*comment{}
 				}
 			} else {
 				// it is an internal entity, parse it using other thread/loop
@@ -278,10 +290,13 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType, meta *Metadata) 
 				return &InvalidEntityError{"Unmarshal", "", fmt.Errorf("'}' is missing")}
 			}
 		default:
-			if len(item) > 2 && item[0] == 47 && item[1] == 47 {
+			if len(item) > 1 && item[0] == 47 && item[1] == 47 {
 				// it is a comment
-				comment = string(item[2:])
+				comments = append(comments, &comment{string(item[2:]), false})
+				commentInProgress = true
 				continue
+			} else {
+				commentInProgress = false
 			}
 			item, err := unmarshalMultilineValue(d, item)
 			if err != nil {
@@ -388,24 +403,29 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType, meta *Metadata) 
 						} else {
 							field.Set(vv)
 						}
-						if comment != "" {
-							meta.AddField(name, &Metadata{Comment: comment})
-							comment = ""
+						if len(comments) > 0 {
+							if meta != nil {
+								m := Metadata{}
+								m.AddComments(comments)
+								meta.AddField(name, &m)
+							}
+							comments = []*comment{}
 						}
 					}
 				}
 			default:
-				if comment != "" {
+				if len(comments) > 0 {
 					if meta != nil {
-						meta.Comment = comment
+						meta.AddComments(comments)
 					}
-					comment = ""
+					comments = []*comment{}
 				}
 				if e := unmarshalValue(v, string(item)); e != nil {
 					return e
 				}
 			}
 		}
+		commentInProgress = false
 	}
 	// check the end/close operator
 	switch curr {

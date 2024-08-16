@@ -263,8 +263,8 @@ func TestMetaIntMarshal(t *testing.T) {
 	in := 1983
 	comment := " A Birthday date"
 	want := fmt.Sprintf("//%s\n%d", comment, in)
-	meta := Metadata{Comment: comment}
-	out, err := Marshal(in, &meta)
+	meta := CreateMetadata(comment, false)
+	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
 	}
@@ -274,8 +274,8 @@ func TestMetaStringMarshal(t *testing.T) {
 	in := "Hello World!"
 	comment := " Hello World comment"
 	want := fmt.Sprintf("//%s\n%s", comment, in)
-	meta := Metadata{Comment: comment}
-	out, err := Marshal(in, &meta)
+	meta := CreateMetadata(comment, false)
+	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
 	}
@@ -288,8 +288,8 @@ line
 value`
 	comment := " A multi-line value"
 	want := fmt.Sprintf("//%s\n`\n%s\n`\n", comment, in)
-	meta := Metadata{Comment: comment}
-	out, err := Marshal(in, &meta)
+	meta := CreateMetadata(comment, false)
+	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
 	}
@@ -299,8 +299,8 @@ func TestMetaBooleanMarshal(t *testing.T) {
 	in := true
 	comment := " Check type of boolean"
 	want := fmt.Sprintf("//%s\n%t", comment, in)
-	meta := Metadata{Comment: comment}
-	out, err := Marshal(in, &meta)
+	meta := CreateMetadata(comment, false)
+	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
 	}
@@ -310,8 +310,8 @@ func TestMetaArrayMarshal(t *testing.T) {
 	in := [3]int{1, 2, 3}
 	comment := " Check type of array"
 	want := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
-	meta := Metadata{Comment: comment}
-	out, err := Marshal(in, &meta)
+	meta := CreateMetadata(comment, false)
+	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
 	}
@@ -321,8 +321,8 @@ func TestMetaSliceMarshal(t *testing.T) {
 	in := []int{1, 2, 3}
 	comment := " Check type of slice"
 	want := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
-	meta := Metadata{Comment: comment}
-	out, err := Marshal(in, &meta)
+	meta := CreateMetadata(comment, false)
+	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
 	}
@@ -332,8 +332,8 @@ func TestMetaMapMarshal(t *testing.T) {
 	in := map[int]int{1: 1, 2: 2, 3: 3}
 	comment := " Check type of map"
 	want := fmt.Sprintf("//%s\n{\n1 1\n2 2\n3 3\n}\n", comment)
-	meta := Metadata{Comment: comment}
-	out, err := Marshal(in, &meta)
+	meta := CreateMetadata(comment, false)
+	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
 	}
@@ -346,10 +346,10 @@ func TestMetaStructMarshal(t *testing.T) {
 		Field3 string `nano:"-"`
 		Field4 int    `nano:"Year"`
 	}{0, "Hi!", "Hello!", 2024}
-	meta := Metadata{Comment: " Object's comment"}
-	meta.AddField("Field1", &Metadata{Comment: " Testing a comment..."})
-	meta.AddField("Field2", &Metadata{Comment: " It cannot be empty"})
-	meta.AddField("Field4", &Metadata{Comment: " Current year is"})
+	meta := CreateMetadata(" Object's comment", false)
+	meta.AddField("Field1", CreateMetadata(" Testing a comment...", false))
+	meta.AddField("Field2", CreateMetadata(" It cannot be empty", false))
+	meta.AddField("Field4", CreateMetadata(" Current year is", false))
 	want := `// Object's comment
 {
 // Testing a comment...
@@ -360,7 +360,22 @@ Field2 Hi!
 Year 2024
 }
 `
-	out, err := Marshal(in, &meta)
+	out, err := Marshal(in, meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestCommentsMarshal(t *testing.T) {
+	in := "Hello World!"
+	comment1 := " First comment"
+	comment2 := ""
+	comment3 := " Second comment"
+	want := fmt.Sprintf("//%s\n%s\n//%s\n%s", comment1, comment2, comment3, in)
+	meta := CreateMetadata(comment1, false)
+	meta.AddComment(comment2, false)
+	meta.AddComment(comment3, false)
+	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
 	}
