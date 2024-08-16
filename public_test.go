@@ -11,12 +11,12 @@ func TestHTTPRequestStruct(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	enc, err := Marshal(req)
+	enc, err := Marshal(req, nil)
 	if err != nil {
 		t.Error(err)
 	}
 	dec := &http.Request{}
-	err = Unmarshal(enc, dec)
+	err = Unmarshal(enc, dec, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -29,7 +29,7 @@ func TestIndentIndent(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	enc, err := Marshal(req)
+	enc, err := Marshal(req, nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -77,7 +77,7 @@ func TestIndentPrefix(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	enc, err := Marshal(req)
+	enc, err := Marshal(req, nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -204,7 +204,7 @@ func TestCompact(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	enc, err := Marshal(req)
+	enc, err := Marshal(req, nil)
 	if err != nil {
 		t.Error(err)
 		return

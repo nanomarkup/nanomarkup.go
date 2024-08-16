@@ -8,58 +8,79 @@ import (
 	"strings"
 )
 
+type Metadata struct {
+	Comment string
+	fields  map[string]*Metadata
+}
+
 // Marshal returns the encoding data for the input value.
 //
 // It traverses the value recursively.
-func Marshal(data any) ([]byte, error) {
+func Marshal(data any, meta *Metadata) ([]byte, error) {
 	val := reflect.ValueOf(data)
 	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
+	out := []byte("")
+	var err error = nil
+	if meta != nil && meta.Comment != "" {
+		out = append(out, []byte(commentOpCode+meta.Comment+"\n")...)
+	}
 	switch val.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return []byte(strconv.FormatInt(val.Int(), 10)), nil
+		out = append(out, []byte(strconv.FormatInt(val.Int(), 10))...)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return []byte(strconv.FormatUint(val.Uint(), 10)), nil
+		out = append(out, []byte(strconv.FormatUint(val.Uint(), 10))...)
 	case reflect.Float32, reflect.Float64:
-		return []byte(strconv.FormatFloat(val.Float(), 'g', -1, 64)), nil
+		out = append(out, []byte(strconv.FormatFloat(val.Float(), 'g', -1, 64))...)
 	case reflect.Complex64, reflect.Complex128:
-		return []byte(strconv.FormatComplex(val.Complex(), 'g', -1, 128)), nil
+		out = append(out, []byte(strconv.FormatComplex(val.Complex(), 'g', -1, 128))...)
 	case reflect.String:
 		lines := strings.Split(val.String(), "\n")
 		if len(lines) == 1 {
-			return []byte(strings.TrimLeft(val.String(), " \t")), nil
+			out = append(out, []byte(strings.TrimLeft(val.String(), " \t"))...)
 		} else {
 			res := "`\n"
 			for _, it := range lines {
 				res += it + "\n"
 			}
-			return []byte(res + "`\n"), nil
+			out = append(out, []byte(res+"`\n")...)
 		}
 	case reflect.Bool:
-		return []byte(strconv.FormatBool(val.Bool())), nil
+		out = append(out, []byte(strconv.FormatBool(val.Bool()))...)
 	case reflect.Slice, reflect.Array:
 		if val.Len() == 0 {
-			return []byte("[\n]\n"), nil
+			out = append(out, []byte("[\n]\n")...)
 		} else {
-			return marshalSlice(val)
+			if o, err := marshalSlice(val); err == nil {
+				out = append(out, o...)
+			} else {
+				out = []byte("")
+			}
 		}
 	case reflect.Map:
 		if val.Len() == 0 {
-			return []byte("{\n}\n"), nil
+			out = append(out, []byte("{\n}\n")...)
 		} else {
-			return marshalMap(val)
+			if o, err := marshalMap(val); err == nil {
+				out = append(out, o...)
+			} else {
+				out = []byte("")
+			}
 		}
 	case reflect.Struct:
-		return marshalStruct(data)
-	default:
-		return []byte(""), nil
+		if o, err := marshalStruct(data, meta); err == nil {
+			out = append(out, o...)
+		} else {
+			out = []byte("")
+		}
 	}
+	return out, err
 }
 
 // MarshalIndent is like Marshal but applies Indent to format the output.
 func MarshalIndent(data any, prefix, indent string) ([]byte, error) {
-	enc, err := Marshal(data)
+	enc, err := Marshal(data, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +97,7 @@ func MarshalIndent(data any, prefix, indent string) ([]byte, error) {
 //
 // It uses the inverse of the encodings that Marshal uses, allocating
 // maps, slices, and pointers as necessary.
-func Unmarshal(data []byte, v any) error {
+func Unmarshal(data []byte, v any, meta *Metadata) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer {
 		return &InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is not a Pointer")}
@@ -91,7 +112,7 @@ func Unmarshal(data []byte, v any) error {
 	d := decoder{}
 	d.data = bytes.Split(data, []byte("\n"))
 	d.reset()
-	return unmarshal(&d, elem, undefined)
+	return unmarshal(&d, elem, undefined, meta)
 }
 
 // Indent function appends to `dst` the nano-encoded source (`src`) in an indented format.

@@ -24,17 +24,19 @@ const (
 )
 
 const (
+	tagNameDelim     string = " "
 	tagValueDelim    string = ","
 	nanoTagName      string = "nano"
 	nanoTagIgnore    string = "-"
 	nanoTagOmitEmpty string = "omitempty"
+	commentOpCode    string = "//"
 )
 
 const (
 	errorContextFmt string = "[%s] %s"
 )
 
-func marshal(data any) ([]byte, error) {
+func marshal(data any, meta *Metadata) ([]byte, error) {
 	val := reflect.ValueOf(data)
 	if isValueNil(val) {
 		return []byte(""), nil
@@ -80,13 +82,13 @@ func marshal(data any) ([]byte, error) {
 		if val.IsZero() {
 			return []byte("{\n}\n"), nil
 		}
-		return marshalStruct(data)
+		return marshalStruct(data, meta)
 	default:
 		return []byte(""), nil
 	}
 }
 
-func marshalStruct(data any) ([]byte, error) {
+func marshalStruct(data any, meta *Metadata) ([]byte, error) {
 	val := reflect.ValueOf(data)
 	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
@@ -101,6 +103,7 @@ func marshalStruct(data any) ([]byte, error) {
 		if isValueNil(fv) {
 			continue
 		}
+		// handle a nano tag
 		data := fv.Interface()
 		name := ""
 		omitempty := false
@@ -132,15 +135,23 @@ func marshalStruct(data any) ([]byte, error) {
 					name = ""
 				}
 			}
-			if omitempty && isEmpty(data) {
-				continue
-			}
+		}
+		if omitempty && isEmpty(data) {
+			continue
 		}
 		if name == "" {
 			name = f.Name
 		}
+		// handle a metadata
+		var fmeta *Metadata = nil
+		if meta != nil {
+			fmeta := meta.GetField(f.Name)
+			if fmeta != nil && fmeta.Comment != "" {
+				res = append(res, []byte(commentOpCode+fmeta.Comment+"\n")...)
+			}
+		}
 		res = append(res, []byte(name+" ")...)
-		v, e := marshal(data)
+		v, e := marshal(data, fmeta)
 		if e != nil {
 			return nil, e
 		}
@@ -156,7 +167,7 @@ func marshalStruct(data any) ([]byte, error) {
 func marshalSlice(value reflect.Value) ([]byte, error) {
 	res := []byte("[\n")
 	for i := 0; i < value.Len(); i++ {
-		v, e := marshal(value.Index(i).Interface())
+		v, e := marshal(value.Index(i).Interface(), nil)
 		if e != nil {
 			return nil, e
 		}
@@ -173,13 +184,13 @@ func marshalMap(value reflect.Value) ([]byte, error) {
 	res := []byte("{\n")
 	iter := value.MapRange()
 	for iter.Next() {
-		v, e := marshal(iter.Key().Interface())
+		v, e := marshal(iter.Key().Interface(), nil)
 		if e != nil {
 			return nil, e
 		}
 		res = append(res, v...)
 		res = append(res, 32) // add a space
-		v, e = marshal(iter.Value().Interface())
+		v, e = marshal(iter.Value().Interface(), nil)
 		if e != nil {
 			return nil, e
 		}
@@ -192,9 +203,13 @@ func marshalMap(value reflect.Value) ([]byte, error) {
 	return res, nil
 }
 
-func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
+func unmarshal(d *decoder, v reflect.Value, curr unmarshalType, meta *Metadata) error {
+	if meta != nil && meta.fields == nil {
+		meta.fields = make(map[string]*Metadata)
+	}
 	ind := -1
 	item, ok := d.next()
+	comment := ""
 	for ; ok; item, ok = d.next() {
 		item = bytes.TrimLeft(item, " \t")
 		if len(item) == 0 {
@@ -209,9 +224,15 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 			if curr == undefined {
 				// set the current type and continue the parsing the rest of data
 				curr = array
+				if comment != "" {
+					if meta != nil {
+						meta.Comment = comment
+					}
+					comment = ""
+				}
 			} else {
 				// it is an internal array, parse it using other thread/loop
-				e := unmarshal(d, v, array)
+				e := unmarshal(d, v, array, meta)
 				if e != nil {
 					return e
 				}
@@ -230,9 +251,22 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 			if curr == undefined {
 				// set the current type and continue the parsing the rest of data
 				curr = entity
+				if comment != "" {
+					if meta != nil {
+						meta.Comment = comment
+					}
+					comment = ""
+				}
 			} else {
 				// it is an internal entity, parse it using other thread/loop
-				e := unmarshal(d, v, entity)
+				name := v.Elem().String()
+				var e error
+				if meta == nil {
+					e = unmarshal(d, v, entity, nil)
+				} else {
+					meta.AddField(name, &Metadata{})
+					e = unmarshal(d, v, entity, meta.GetField(name))
+				}
 				if e != nil {
 					return e
 				}
@@ -244,6 +278,11 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 				return &InvalidEntityError{"Unmarshal", "", fmt.Errorf("'}' is missing")}
 			}
 		default:
+			if len(item) > 2 && item[0] == 47 && item[1] == 47 {
+				// it is a comment
+				comment = string(item[2:])
+				continue
+			}
 			item, err := unmarshalMultilineValue(d, item)
 			if err != nil {
 				return err
@@ -290,7 +329,7 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 					}
 					v.SetMapIndex(kv, vv)
 				} else {
-					if field, omitempty := getField(v, string(ks)); field.IsValid() {
+					if field, name, omitempty := getField(v, string(ks)); field.IsValid() {
 						var vv reflect.Value
 						if field.Type().Kind() == reflect.Pointer {
 							if field.Type().Elem().Kind() == reflect.Map {
@@ -312,7 +351,7 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 									return &InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an array must be started from a new line")}
 								} else {
 									// it is an internal array, parse it using other thread/loop
-									e := unmarshal(d, vv, array)
+									e := unmarshal(d, vv, array, meta)
 									if e != nil {
 										return e
 									}
@@ -323,7 +362,14 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 									return &InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an entity must be started from a new line")}
 								} else {
 									// it is an internal entity, parse it using other thread/loop
-									e := unmarshal(d, vv, entity)
+									var e error
+									if meta == nil {
+										e = unmarshal(d, vv, entity, nil)
+									} else {
+										name := v.Elem().String()
+										meta.AddField(name, &Metadata{})
+										e = unmarshal(d, vv, entity, meta.GetField(name))
+									}
 									if e != nil {
 										return e
 									}
@@ -342,9 +388,19 @@ func unmarshal(d *decoder, v reflect.Value, curr unmarshalType) error {
 						} else {
 							field.Set(vv)
 						}
+						if comment != "" {
+							meta.AddField(name, &Metadata{Comment: comment})
+							comment = ""
+						}
 					}
 				}
 			default:
+				if comment != "" {
+					if meta != nil {
+						meta.Comment = comment
+					}
+					comment = ""
+				}
 				if e := unmarshalValue(v, string(item)); e != nil {
 					return e
 				}
@@ -537,11 +593,11 @@ func isValueNil(v reflect.Value) bool {
 	}
 }
 
-func getField(src reflect.Value, name string) (reflect.Value, omitEmpty) {
+func getField(src reflect.Value, name string) (reflect.Value, string, omitEmpty) {
 	rValue := reflect.Value{}
 	var rEmpty omitEmpty = true
 	if src.Kind() != reflect.Struct {
-		return rValue, rEmpty
+		return rValue, name, rEmpty
 	}
 	// nano tag has more priority than a field of struct
 	for _, f := range reflect.VisibleFields(src.Type()) {
@@ -573,39 +629,39 @@ func getField(src reflect.Value, name string) (reflect.Value, omitEmpty) {
 			}
 		}
 		if fn != nanoTagIgnore && fn != nanoTagOmitEmpty && fn == name {
-			return fv, rEmpty
+			return fv, f.Name, rEmpty
 		}
 	}
 	// check field
 	sf, ok := src.Type().FieldByName(name)
 	if !ok {
-		return rValue, rEmpty
+		return rValue, sf.Name, rEmpty
 	} else {
 		rValue = src.FieldByName(sf.Name)
 		tag, ok := sf.Tag.Lookup(nanoTagName)
 		if !ok {
-			return rValue, false
+			return rValue, sf.Name, false
 		} else if tag == nanoTagIgnore {
-			return reflect.Value{}, false
+			return reflect.Value{}, sf.Name, false
 		} else if tag == nanoTagOmitEmpty {
-			return rValue, true
+			return rValue, sf.Name, true
 		}
 		items := strings.Split(tag, tagValueDelim)
 		l := len(items)
 		if l == 1 {
 			if tag == nanoTagIgnore {
-				return reflect.Value{}, false
+				return reflect.Value{}, sf.Name, false
 			} else if tag == nanoTagOmitEmpty {
-				return rValue, true
+				return rValue, sf.Name, true
 			}
 		} else if l > 1 {
 			if items[0] == nanoTagIgnore || items[1] == nanoTagIgnore {
-				return reflect.Value{}, false
+				return reflect.Value{}, sf.Name, false
 			} else if items[0] == nanoTagOmitEmpty || items[1] == nanoTagOmitEmpty {
-				return rValue, true
+				return rValue, sf.Name, true
 			}
 		}
-		return rValue, false
+		return rValue, sf.Name, false
 	}
 }
 

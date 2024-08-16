@@ -2,6 +2,7 @@ package nanomarkup
 
 import (
 	"encoding"
+	"fmt"
 	"testing"
 )
 
@@ -16,7 +17,7 @@ func TestNilMarshal(t *testing.T) {
 	}
 
 	for _, item := range testCases {
-		out, err := Marshal(item.v)
+		out, err := Marshal(item.v, nil)
 		if s := checkMarshal(item.v, out, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -41,7 +42,7 @@ func TestEmptyMarshal(t *testing.T) {
 	}
 
 	for _, item := range testCases {
-		out, err := Marshal(item.v)
+		out, err := Marshal(item.v, nil)
 		if s := checkMarshal(item.v, out, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -62,7 +63,7 @@ func TestNumberMarshal(t *testing.T) {
 	}
 
 	for _, item := range testCases {
-		out, err := Marshal(item.v)
+		out, err := Marshal(item.v, nil)
 		if s := checkMarshal(item.v, out, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -82,7 +83,7 @@ func TestStringMarshal(t *testing.T) {
 	}
 
 	for _, item := range testCases {
-		out, err := Marshal(item.v)
+		out, err := Marshal(item.v, nil)
 		if s := checkMarshal(item.v, out, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -97,7 +98,7 @@ line
 value`
 	swant := "`\n" + sin + "\n`\n"
 
-	out, err := Marshal(sin)
+	out, err := Marshal(sin, nil)
 	if s := checkMarshal(sin, out, swant, err); s != "" {
 		t.Error(s)
 	}
@@ -106,7 +107,7 @@ value`
 	ain := []string{sin}
 	awant := "[\n`\n" + sin + "\n`\n]\n"
 
-	out, err = Marshal(ain)
+	out, err = Marshal(ain, nil)
 	if s := checkMarshal(ain, out, awant, err); s != "" {
 		t.Error(s)
 	}
@@ -118,7 +119,7 @@ value`
 	tin := st{sin}
 	twant := "{\nMultiValue `\n" + sin + "\n`\n}\n"
 
-	out, err = Marshal(tin)
+	out, err = Marshal(tin, nil)
 	if s := checkMarshal(tin, out, twant, err); s != "" {
 		t.Error(s)
 	}
@@ -134,7 +135,7 @@ func TestBooleanMarshal(t *testing.T) {
 	}
 
 	for _, item := range testCases {
-		out, err := Marshal(item.v)
+		out, err := Marshal(item.v, nil)
 		if s := checkMarshal(item.v, out, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -168,7 +169,7 @@ func TestStructMarshal(t *testing.T) {
 	}
 
 	for _, item := range testCases {
-		out, err := Marshal(item.v)
+		out, err := Marshal(item.v, nil)
 		if s := checkMarshal(item.v, out, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -191,7 +192,7 @@ func TestSliceMarshal(t *testing.T) {
 	}
 
 	for _, item := range testCases {
-		out, err := Marshal(item.v)
+		out, err := Marshal(item.v, nil)
 		if s := checkMarshal(item.v, out, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -209,7 +210,7 @@ func TestMapMarshal(t *testing.T) {
 	}
 
 	for _, item := range testCases {
-		out, err := Marshal(item.v)
+		out, err := Marshal(item.v, nil)
 		if s := checkMarshal(item.v, out, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -251,9 +252,116 @@ func TestNanoTagMarshal(t *testing.T) {
 	}
 
 	for _, item := range testCases {
-		out, err := Marshal(item.v)
+		out, err := Marshal(item.v, nil)
 		if s := checkMarshal(item.v, out, item.want, err); s != "" {
 			t.Error(s)
 		}
+	}
+}
+
+func TestMetaIntMarshal(t *testing.T) {
+	in := 1983
+	comment := " A Birthday date"
+	want := fmt.Sprintf("//%s\n%d", comment, in)
+	meta := Metadata{Comment: comment}
+	out, err := Marshal(in, &meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestMetaStringMarshal(t *testing.T) {
+	in := "Hello World!"
+	comment := " Hello World comment"
+	want := fmt.Sprintf("//%s\n%s", comment, in)
+	meta := Metadata{Comment: comment}
+	out, err := Marshal(in, &meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestMetaMultiLineMarshal(t *testing.T) {
+	in := `testing
+a multi
+line
+value`
+	comment := " A multi-line value"
+	want := fmt.Sprintf("//%s\n`\n%s\n`\n", comment, in)
+	meta := Metadata{Comment: comment}
+	out, err := Marshal(in, &meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestMetaBooleanMarshal(t *testing.T) {
+	in := true
+	comment := " Check type of boolean"
+	want := fmt.Sprintf("//%s\n%t", comment, in)
+	meta := Metadata{Comment: comment}
+	out, err := Marshal(in, &meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestMetaArrayMarshal(t *testing.T) {
+	in := [3]int{1, 2, 3}
+	comment := " Check type of array"
+	want := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
+	meta := Metadata{Comment: comment}
+	out, err := Marshal(in, &meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestMetaSliceMarshal(t *testing.T) {
+	in := []int{1, 2, 3}
+	comment := " Check type of slice"
+	want := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
+	meta := Metadata{Comment: comment}
+	out, err := Marshal(in, &meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestMetaMapMarshal(t *testing.T) {
+	in := map[int]int{1: 1, 2: 2, 3: 3}
+	comment := " Check type of map"
+	want := fmt.Sprintf("//%s\n{\n1 1\n2 2\n3 3\n}\n", comment)
+	meta := Metadata{Comment: comment}
+	out, err := Marshal(in, &meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestMetaStructMarshal(t *testing.T) {
+	in := struct {
+		Field1 int
+		Field2 string `nano:"omitempty"`
+		Field3 string `nano:"-"`
+		Field4 int    `nano:"Year"`
+	}{0, "Hi!", "Hello!", 2024}
+	meta := Metadata{Comment: " Object's comment"}
+	meta.AddField("Field1", &Metadata{Comment: " Testing a comment..."})
+	meta.AddField("Field2", &Metadata{Comment: " It cannot be empty"})
+	meta.AddField("Field4", &Metadata{Comment: " Current year is"})
+	want := `// Object's comment
+{
+// Testing a comment...
+Field1 0
+// It cannot be empty
+Field2 Hi!
+// Current year is
+Year 2024
+}
+`
+	out, err := Marshal(in, &meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
 	}
 }

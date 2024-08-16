@@ -8,12 +8,12 @@ func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error
     indented format. The data appended to dst does not begin with the prefix
     nor any indentation, to make it easier to embed inside other formatted
     nano-encoded data.
-func Marshal(data any) ([]byte, error)
+func Marshal(data any, meta *Metadata) ([]byte, error)
     Marshal returns the encoding data for the input value.
     It traverses the value recursively.
 func MarshalIndent(data any, prefix, indent string) ([]byte, error)
     MarshalIndent is like Marshal but applies Indent to format the output.
-func Unmarshal(data []byte, v any) error
+func Unmarshal(data []byte, v any, meta *Metadata) error
     Unmarshal parses the encoded data and stores the result in v. If v is nil or
     not a pointer, Unmarshal returns an InvalidArgumentError.
     It uses the inverse of the encodings that Marshal uses, allocating maps,
@@ -36,3 +36,9 @@ type InvalidEntityError struct {
     with an invalid entity.
 func (e *InvalidEntityError) Error() string
     Error returns a string representation of the InvalidEntityError.
+type Metadata struct {
+	Comment string
+	// Has unexported fields.
+}
+func (m *Metadata) AddField(name string, data *Metadata)
+func (m *Metadata) GetField(name string) *Metadata

@@ -16,7 +16,7 @@ func TestIntUnmarshal(t *testing.T) {
 
 	r := new(int)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalInt(item.v, int64(*r), int64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -34,7 +34,7 @@ func TestInt8Unmarshal(t *testing.T) {
 
 	r := new(int8)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalInt(item.v, int64(*r), int64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -52,7 +52,7 @@ func TestInt16Unmarshal(t *testing.T) {
 
 	r := new(int16)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalInt(item.v, int64(*r), int64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -70,7 +70,7 @@ func TestInt32Unmarshal(t *testing.T) {
 
 	r := new(int32)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalInt(item.v, int64(*r), int64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -88,7 +88,7 @@ func TestInt64Unmarshal(t *testing.T) {
 
 	r := new(int64)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalInt(item.v, int64(*r), int64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -105,7 +105,7 @@ func TestUintUnmarshal(t *testing.T) {
 
 	r := new(uint)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalUint(item.v, uint64(*r), uint64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -122,7 +122,7 @@ func TestUint8Unmarshal(t *testing.T) {
 
 	r := new(uint8)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalUint(item.v, uint64(*r), uint64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -139,7 +139,7 @@ func TestUint16Unmarshal(t *testing.T) {
 
 	r := new(uint16)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalUint(item.v, uint64(*r), uint64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -156,7 +156,7 @@ func TestUint32Unmarshal(t *testing.T) {
 
 	r := new(uint32)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalUint(item.v, uint64(*r), uint64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -173,7 +173,7 @@ func TestUint64Unmarshal(t *testing.T) {
 
 	r := new(uint64)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalUint(item.v, uint64(*r), uint64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -193,7 +193,7 @@ func TestFloat32Unmarshal(t *testing.T) {
 
 	r := new(float32)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalFloat(item.v, float64(*r), float64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -213,7 +213,7 @@ func TestFloat64Unmarshal(t *testing.T) {
 
 	r := new(float64)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalFloat(item.v, float64(*r), float64(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -230,7 +230,7 @@ func TestComplex64Unmarshal(t *testing.T) {
 
 	r := new(complex64)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalComplex(item.v, complex128(*r), complex128(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -247,7 +247,7 @@ func TestComplex128Unmarshal(t *testing.T) {
 
 	r := new(complex128)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalComplex(item.v, complex128(*r), complex128(item.want), err); s != "" {
 			t.Error(s)
 		}
@@ -268,7 +268,7 @@ func TestStringUnmarshal(t *testing.T) {
 
 	r := new(string)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalString(item.v, *r, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -283,7 +283,7 @@ line
 value`
 	sin := "`\n" + swant + "\n`\n"
 	sout := ""
-	err := Unmarshal([]byte(sin), &sout)
+	err := Unmarshal([]byte(sin), &sout, nil)
 	if s := checkUnmarshalString(sin, sout, swant, err); s != "" {
 		t.Error(s)
 	}
@@ -292,7 +292,7 @@ value`
 	ain := "[\n`\n" + swant + "\n`\n]\n"
 	awant := []string{"testing\na multi\nline\nvalue"}
 	aout := []string{}
-	err = Unmarshal([]byte(ain), &aout)
+	err = Unmarshal([]byte(ain), &aout, nil)
 	pass := len(aout) == len(awant)
 	if pass {
 		for i := range aout {
@@ -324,7 +324,7 @@ value`
 	tin := "{\nMultiValue `\n" + swant + "\n`\n}\n"
 	twant := st{swant}
 	tout := st{}
-	err = Unmarshal([]byte(tin), &tout)
+	err = Unmarshal([]byte(tin), &tout, nil)
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -343,7 +343,7 @@ func TestBooleanUnmarshal(t *testing.T) {
 
 	r := new(bool)
 	for _, item := range testCases {
-		err := Unmarshal([]byte(item.v), r)
+		err := Unmarshal([]byte(item.v), r, nil)
 		if s := checkUnmarshalBool(item.v, *r, item.want, err); s != "" {
 			t.Error(s)
 		}
@@ -353,7 +353,7 @@ func TestBooleanUnmarshal(t *testing.T) {
 func TestArrayUnmarshal(t *testing.T) {
 	// test an empty array
 	array := [0]int{}
-	err := Unmarshal([]byte("[\n]"), &array)
+	err := Unmarshal([]byte("[\n]"), &array, nil)
 	mes := ""
 	if len(array) > 0 {
 		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", "[]", array, [0]int{})
@@ -378,7 +378,7 @@ func TestArrayUnmarshal(t *testing.T) {
 	}
 	for _, item := range arrayInt {
 		rai := [3]int{}
-		err = Unmarshal([]byte(item.v), &rai)
+		err = Unmarshal([]byte(item.v), &rai, nil)
 		if err == nil && rai == item.want {
 			continue
 		}
@@ -401,7 +401,7 @@ func TestArrayUnmarshal(t *testing.T) {
 	}
 	for _, item := range arrayString {
 		ras := [3]string{}
-		err = Unmarshal([]byte(item.v), &ras)
+		err = Unmarshal([]byte(item.v), &ras, nil)
 		if err == nil && ras == item.want {
 			continue
 		}
@@ -420,7 +420,7 @@ func TestArrayUnmarshal(t *testing.T) {
 func TestSliceUnmarshal(t *testing.T) {
 	// test an empty slice
 	slice := []int{}
-	err := Unmarshal([]byte("[\n]"), &slice)
+	err := Unmarshal([]byte("[\n]"), &slice, nil)
 	mes := ""
 	if len(slice) > 0 {
 		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", "[]", slice, []int{})
@@ -445,7 +445,7 @@ func TestSliceUnmarshal(t *testing.T) {
 	}
 	for _, item := range sliceInt {
 		rsi := []int{}
-		err = Unmarshal([]byte(item.v), &rsi)
+		err = Unmarshal([]byte(item.v), &rsi, nil)
 		pass := len(rsi) == len(item.want)
 		if pass {
 			for i := range rsi {
@@ -478,7 +478,7 @@ func TestSliceUnmarshal(t *testing.T) {
 	}
 	for _, item := range sliceString {
 		rss := []string{}
-		err = Unmarshal([]byte(item.v), &rss)
+		err = Unmarshal([]byte(item.v), &rss, nil)
 		pass := len(rss) == len(item.want)
 		if pass {
 			for i := range rss {
@@ -506,7 +506,7 @@ func TestSliceUnmarshal(t *testing.T) {
 func TestMapUnmarshal(t *testing.T) {
 	// test an empty map
 	m := map[int]interface{}{}
-	err := Unmarshal([]byte("{\n}"), &m)
+	err := Unmarshal([]byte("{\n}"), &m, nil)
 	mes := ""
 	if len(m) > 0 {
 		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", "[]", m, []int{})
@@ -531,7 +531,7 @@ func TestMapUnmarshal(t *testing.T) {
 	}
 	for _, item := range mapInt {
 		rmi := map[int]int{}
-		err = Unmarshal([]byte(item.v), &rmi)
+		err = Unmarshal([]byte(item.v), &rmi, nil)
 		pass := len(rmi) == len(item.want)
 		if pass {
 			for i := range item.want {
@@ -563,7 +563,7 @@ func TestMapUnmarshal(t *testing.T) {
 	}
 	for _, item := range mapString {
 		rms := map[string]string{}
-		err = Unmarshal([]byte(item.v), &rms)
+		err = Unmarshal([]byte(item.v), &rms, nil)
 		pass := len(rms) == len(item.want)
 		if pass {
 			for i := range item.want {
@@ -603,7 +603,7 @@ func TestStructUnmarshal(t *testing.T) {
 	rv2 := t2{rv1}
 	want2 := t2{want1}
 
-	err := Unmarshal([]byte(st1), &rv1)
+	err := Unmarshal([]byte(st1), &rv1, nil)
 	mes := ""
 	if rv1.TestInt != want1.TestInt &&
 		rv1.TestStr != want1.TestStr {
@@ -620,7 +620,7 @@ func TestStructUnmarshal(t *testing.T) {
 		t.Error(mes)
 	}
 
-	err = Unmarshal([]byte(st2), &rv2)
+	err = Unmarshal([]byte(st2), &rv2, nil)
 	mes = ""
 	if rv2.T1.TestInt != want2.T1.TestInt &&
 		rv2.T1.TestStr != want2.T1.TestStr {
@@ -652,7 +652,7 @@ func TestTabUnmarshal(t *testing.T) {
 	rv2 := t2{rv1}
 	want2 := t2{want1}
 
-	err := Unmarshal([]byte(st2), &rv2)
+	err := Unmarshal([]byte(st2), &rv2, nil)
 	mes := ""
 	if rv2.T1.TestInt != want2.T1.TestInt &&
 		rv2.T1.TestStr != want2.T1.TestStr {
@@ -713,7 +713,7 @@ test11 11
 	}
 	want := t1{1, "2", 33, 44, 55, "66", 77, "88", "99", 10, "11"}
 
-	err := Unmarshal([]byte(in), &out)
+	err := Unmarshal([]byte(in), &out, nil)
 	mes := ""
 	if out.Field1 != want.Field1 ||
 		out.Field2 != want.Field2 ||
@@ -727,6 +727,263 @@ test11 11
 		out.Field10 != want.Field10 ||
 		out.Field11 != want.Field11 {
 		mes = fmt.Sprintf("[Unmarshal] in: %s; out: %v; want: %v", in, out, want)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestMetaIntUnmarshal(t *testing.T) {
+	var out int64 = 0
+	var want int64 = 1983
+	comment := " A Birthday date"
+	in := fmt.Sprintf("//%s\n%d\n", comment, want)
+	mout := Metadata{}
+	mwant := Metadata{Comment: comment}
+	err := Unmarshal([]byte(in), &out, &mout)
+	mes := checkUnmarshalInt(in, out, want, err)
+	if mout.Comment != mwant.Comment {
+		if mes == "" {
+			mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
+		} else {
+			mes = fmt.Sprintf("; out meta: %v\nwant meta: %v", mout, mwant)
+		}
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestMetaStringUnmarshal(t *testing.T) {
+	want := "Hello World!"
+	comment := " Hello World comment"
+	in := fmt.Sprintf("//%s\n%s\n", comment, want)
+	out := ""
+	mout := Metadata{}
+	mwant := Metadata{Comment: comment}
+	err := Unmarshal([]byte(in), &out, &mout)
+	mes := checkUnmarshalString(in, out, want, err)
+	if mout.Comment != mwant.Comment {
+		if mes == "" {
+			mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
+		} else {
+			mes = fmt.Sprintf("; out meta: %v\nwant meta: %v", mout, mwant)
+		}
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestMetaMultiLineUnmarshal(t *testing.T) {
+	want := `testing
+a multi
+line
+value`
+	comment := " A multi-line value"
+	in := fmt.Sprintf("//%s\n`\n%s\n`\n", comment, want)
+	out := ""
+	mout := Metadata{}
+	mwant := Metadata{Comment: comment}
+	err := Unmarshal([]byte(in), &out, &mout)
+	mes := checkUnmarshalString(in, out, want, err)
+	if mout.Comment != mwant.Comment {
+		if mes == "" {
+			mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
+		} else {
+			mes = fmt.Sprintf("; out meta: %v\nwant meta: %v", mout, mwant)
+		}
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestMetaBooleanUnmarshal(t *testing.T) {
+	want := true
+	comment := " Check type of boolean"
+	in := fmt.Sprintf("//%s\n%t\n", comment, want)
+	out := false
+	mout := Metadata{}
+	mwant := Metadata{Comment: comment}
+	err := Unmarshal([]byte(in), &out, &mout)
+	mes := checkUnmarshalBool(in, out, want, err)
+	if mout.Comment != mwant.Comment {
+		if mes == "" {
+			mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
+		} else {
+			mes = fmt.Sprintf("; out meta: %v\nwant meta: %v", mout, mwant)
+		}
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestMetaArrayUnmarshal(t *testing.T) {
+	want := [3]int{1, 2, 3}
+	comment := " Check type of array"
+	in := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
+	out := [3]int{}
+	mout := Metadata{}
+	mwant := Metadata{Comment: comment}
+	err := Unmarshal([]byte(in), &out, &mout)
+	mes := ""
+	if out != want || mout.Comment != mwant.Comment {
+		mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestMetaSliceUnmarshal(t *testing.T) {
+	want := []int{1, 2, 3}
+	comment := " Check type of slice"
+	in := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
+	out := []int{}
+	mout := Metadata{}
+	mwant := Metadata{Comment: comment}
+	err := Unmarshal([]byte(in), &out, &mout)
+	mes := ""
+	pass := len(want) == len(out)
+	if pass {
+		for i := range out {
+			if want[i] != out[i] {
+				pass = false
+				break
+			}
+		}
+	}
+	if !pass || mout.Comment != mwant.Comment {
+		mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestMetaMapUnmarshal(t *testing.T) {
+	want := map[int]int{1: 1, 2: 2, 3: 3}
+	comment := " Check type of map"
+	in := fmt.Sprintf("//%s\n{\n1 1\n2 2\n3 3\n}\n", comment)
+	out := map[int]int{}
+	mout := Metadata{}
+	mwant := Metadata{Comment: comment}
+	err := Unmarshal([]byte(in), &out, &mout)
+	mes := ""
+	pass := len(want) == len(out)
+	if pass {
+		for i := range out {
+			if want[i] != out[i] {
+				pass = false
+				break
+			}
+		}
+	}
+	if !pass || mout.Comment != mwant.Comment {
+		mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestMetaStructUnmarshal(t *testing.T) {
+	type t1 struct {
+		Field1 int
+		Field2 string `nano:"omitempty" `
+		Field3 string `nano:"-"`
+		Field4 int    `nano:"Year"`
+	}
+	in := `// Object's comment
+{
+// Testing a comment...
+Field1 0
+// It cannot be empty
+Field2 Hi!
+// Current year is
+Year 2024
+}
+`
+	want := t1{0, "Hi!", "", 2024}
+	mwant := Metadata{Comment: " Object's comment"}
+	mwant.AddField("Field1", &Metadata{Comment: " Testing a comment..."})
+	mwant.AddField("Field2", &Metadata{Comment: " It cannot be empty"})
+	mwant.AddField("Field4", &Metadata{Comment: " Current year is"})
+	out := t1{}
+	mout := Metadata{}
+	err := Unmarshal([]byte(in), &out, &mout)
+	mes := ""
+
+	f1 := mout.GetField("Field1")
+	f2 := mout.GetField("Field2")
+	f4 := mout.GetField("Field4")
+	if out.Field1 != want.Field1 ||
+		out.Field2 != want.Field2 ||
+		out.Field3 != want.Field3 ||
+		out.Field4 != want.Field4 ||
+		mout.Comment != mwant.Comment ||
+		f1 == nil || f1.Comment != mwant.GetField("Field1").Comment ||
+		f2 == nil || f2.Comment != mwant.GetField("Field2").Comment ||
+		f4 == nil || f4.Comment != mwant.GetField("Field4").Comment {
+		mes = fmt.Sprintf("[Unmarshal] in: %s\nout: %v; meta: %v\nwant: %v; meta: %v", in, out, mout, want, mwant)
 	}
 	if err != nil {
 		if mes == "" {
