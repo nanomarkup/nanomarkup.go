@@ -2,6 +2,7 @@ package nanomarkup
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"testing"
 )
@@ -146,6 +147,43 @@ value`
 ##a multi
 ##line
 ##value` + "\n##  `\n##}\n"
+	dst = bytes.Buffer{}
+	if err := Indent(&dst, []byte(in), "##", "  "); err != nil {
+		t.Error(err)
+		return
+	}
+	out = dst.String()
+	if out != want {
+		t.Errorf("[Indent] in: %s; out: %s; want: %s", in, out, want)
+	}
+}
+
+func TestIndentComment(t *testing.T) {
+	// test a string
+	sin := `testing
+a multi
+line
+value`
+	swant := `##testing
+##a multi
+##line
+##value`
+	comment := "// Test a comment"
+	in := fmt.Sprintf("%s\n`\n%s\n`\n", comment, sin)
+	want := fmt.Sprintf("%s\n##`\n%s\n##`\n", comment, swant)
+	dst := bytes.Buffer{}
+	if err := Indent(&dst, []byte(in), "##", "  "); err != nil {
+		t.Error(err)
+		return
+	}
+	out := dst.String()
+	if out != want {
+		t.Errorf("[Indent] in: %s; out: %s; want: %s", in, out, want)
+	}
+
+	// test a struct
+	in = fmt.Sprintf("{\n%s\nMultiLine `\n%s\n`\n}\n", comment, sin)
+	want = fmt.Sprintf("{\n##  %s\n##  MultiLine `\n%s\n##  `\n##}\n", comment, swant)
 	dst = bytes.Buffer{}
 	if err := Indent(&dst, []byte(in), "##", "  "); err != nil {
 		t.Error(err)

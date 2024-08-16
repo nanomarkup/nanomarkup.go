@@ -731,6 +731,16 @@ func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
 				first = false
 			}
 		default:
+			if len(item) > 2 && item[0] == 47 && item[1] == 47 {
+				// it is a comment
+				if first {
+					first = false
+					dst = append(dst, []byte(string(item)+"\n")...)
+				} else {
+					dst = append(dst, []byte(currIndent+string(item)+"\n")...)
+				}
+				continue
+			}
 			up := false
 			str := string(item)
 			space := strings.Index(str, " ")
