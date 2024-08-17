@@ -368,13 +368,18 @@ Year 2024
 
 func TestCommentsMarshal(t *testing.T) {
 	in := "Hello World!"
-	comment1 := " First comment"
-	comment2 := ""
-	comment3 := " Second comment"
-	want := fmt.Sprintf("//%s\n%s\n//%s\n%s", comment1, comment2, comment3, in)
-	meta := CreateMetadata(comment1, false)
-	meta.Comments.Add(comment2, false)
-	meta.Comments.Add(comment3, false)
+	empty := ""
+	multi1 := " First multiline comment "
+	multi2 := " Second\nmultiline\ncomment "
+	single1 := " First single comment"
+	single2 := " Second signle comment"
+	want := fmt.Sprintf("//%s\n%s\n/*%s*/\n//%s\n/*%s*/\n/*%s*/\n%s", single1, empty, multi1, single2, multi2, empty, in)
+	meta := CreateMetadata(single1, false)
+	meta.Comments.Add(empty, false)
+	meta.Comments.Add(multi1, true)
+	meta.Comments.Add(single2, false)
+	meta.Comments.Add(multi2, true)
+	meta.Comments.Add(empty, true)
 	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)

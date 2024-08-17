@@ -999,15 +999,20 @@ Year 2024
 
 func TestCommentsUnmarshal(t *testing.T) {
 	want := "Hello World!"
-	comment1 := " First comment"
-	comment2 := ""
-	comment3 := " Second comment"
-	in := fmt.Sprintf("//%s\n%s\n//%s\n%s\n", comment1, comment2, comment3, want)
+	empty := ""
+	multi1 := " First multiline comment "
+	multi2 := " Second\nmultiline\ncomment "
+	single1 := " First single comment"
+	single2 := " Second signle comment"
+	in := fmt.Sprintf("//%s\n%s\n/*%s*/\n//%s\n/*%s*/\n/*%s*/\n%s", single1, empty, multi1, single2, multi2, empty, want)
 	out := ""
 	mout := Metadata{}
-	mwant := CreateMetadata(comment1, false)
-	mwant.Comments.Add(comment2, false)
-	mwant.Comments.Add(comment3, false)
+	mwant := CreateMetadata(single1, false)
+	mwant.Comments.Add(empty, false)
+	mwant.Comments.Add(multi1, true)
+	mwant.Comments.Add(single2, false)
+	mwant.Comments.Add(multi2, true)
+	mwant.Comments.Add(empty, true)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := checkUnmarshalString(in, out, want, err)
 	if mout.Comments.String() != mwant.Comments.String() {
