@@ -19,29 +19,10 @@ func Unmarshal(data []byte, v any, meta *Metadata) error
     It uses the inverse of the encodings that Marshal uses, allocating maps,
     slices, and pointers as necessary.
 TYPES
-type InvalidArgumentError struct {
-	Context string
-	Err     error
-}
-    InvalidArgumentError describes an error that occurs when an invalid argument
-    is provided.
-func (e *InvalidArgumentError) Error() string
-    Error returns a string representation of the InvalidArgumentError.
-type InvalidEntityError struct {
-	Context string
-	Entity  string
-	Err     error
-}
-    InvalidEntityError describes an error that occurs when an attempt is made
-    with an invalid entity.
-func (e *InvalidEntityError) Error() string
-    Error returns a string representation of the InvalidEntityError.
 type Metadata struct {
+	Comments nanocomment.Comments
 	// Has unexported fields.
 }
 func CreateMetadata(comment string, multiline bool) *Metadata
-func (m *Metadata) AddComment(value string, multiline bool)
-func (m *Metadata) AddComments(comments []*comment)
 func (m *Metadata) AddField(name string, data *Metadata)
-func (m *Metadata) GetComments() string
 func (m *Metadata) GetField(name string) *Metadata

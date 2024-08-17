@@ -373,8 +373,8 @@ func TestCommentsMarshal(t *testing.T) {
 	comment3 := " Second comment"
 	want := fmt.Sprintf("//%s\n%s\n//%s\n%s", comment1, comment2, comment3, in)
 	meta := CreateMetadata(comment1, false)
-	meta.AddComment(comment2, false)
-	meta.AddComment(comment3, false)
+	meta.Comments.Add(comment2, false)
+	meta.Comments.Add(comment3, false)
 	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)

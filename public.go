@@ -5,22 +5,21 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
-)
 
-type comment struct {
-	value     string
-	multiline bool
-}
+	"nanomarkup.go/nanocomment"
+	"nanomarkup.go/nanodecoder"
+	"nanomarkup.go/nanoerror"
+	"nanomarkup.go/nanostr"
+)
 
 type Metadata struct {
 	fields   map[string]*Metadata
-	comments []*comment
+	Comments nanocomment.Comments
 }
 
 func CreateMetadata(comment string, multiline bool) *Metadata {
 	m := Metadata{}
-	m.AddComment(comment, multiline)
+	m.Comments.Add(comment, multiline)
 	return &m
 }
 
@@ -34,16 +33,8 @@ func Marshal(data any, meta *Metadata) ([]byte, error) {
 	}
 	out := []byte("")
 	var err error = nil
-	if meta != nil && len(meta.comments) > 0 {
-		for _, v := range meta.comments {
-			if v.multiline {
-
-			} else if v.value == "" {
-				out = append(out, []byte("\n")...)
-			} else {
-				out = append(out, []byte(commentOpCode+v.value+"\n")...)
-			}
-		}
+	if meta != nil && len(meta.Comments) > 0 {
+		out = append(out, nanocomment.Marshal(meta.Comments)...)
 	}
 	switch val.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -55,16 +46,7 @@ func Marshal(data any, meta *Metadata) ([]byte, error) {
 	case reflect.Complex64, reflect.Complex128:
 		out = append(out, []byte(strconv.FormatComplex(val.Complex(), 'g', -1, 128))...)
 	case reflect.String:
-		lines := strings.Split(val.String(), "\n")
-		if len(lines) == 1 {
-			out = append(out, []byte(strings.TrimLeft(val.String(), " \t"))...)
-		} else {
-			res := "`\n"
-			for _, it := range lines {
-				res += it + "\n"
-			}
-			out = append(out, []byte(res+"`\n")...)
-		}
+		out = append(out, nanostr.Marshal(val.String())...)
 	case reflect.Bool:
 		out = append(out, []byte(strconv.FormatBool(val.Bool()))...)
 	case reflect.Slice, reflect.Array:
@@ -119,18 +101,17 @@ func MarshalIndent(data any, prefix, indent string) ([]byte, error) {
 func Unmarshal(data []byte, v any, meta *Metadata) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer {
-		return &InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is not a Pointer")}
+		return &nanoerror.InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is not a Pointer")}
 	}
 	if rv.IsNil() {
-		return &InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is Nil")}
+		return &nanoerror.InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is Nil")}
 	}
 	elem := rv.Elem()
 	if !elem.CanSet() {
-		return &InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is not settable")}
+		return &nanoerror.InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is not settable")}
 	}
-	d := decoder{}
-	d.data = bytes.Split(data, []byte("\n"))
-	d.reset()
+	d := nanodecoder.Decoder{}
+	d.Init(bytes.Split(data, []byte("\n")))
 	return unmarshal(&d, elem, undefined, meta)
 }
 
@@ -154,42 +135,4 @@ func Compact(dst *bytes.Buffer, src []byte) error {
 	b, err := appendIndent(b, src, "", "")
 	dst.Write(b)
 	return err
-}
-
-// InvalidArgumentError describes an error that occurs when an invalid argument is provided.
-type InvalidArgumentError struct {
-	Context string
-	Err     error
-}
-
-// Error returns a string representation of the InvalidArgumentError.
-func (e *InvalidArgumentError) Error() string {
-	if len(strings.TrimSpace(e.Context)) > 0 {
-		return fmt.Sprintf(errorContextFmt, e.Context, e.Err.Error())
-	} else {
-		return e.Err.Error()
-	}
-}
-
-// InvalidEntityError describes an error that occurs when an attempt is made with an invalid entity.
-type InvalidEntityError struct {
-	Context string
-	Entity  string
-	Err     error
-}
-
-// Error returns a string representation of the InvalidEntityError.
-func (e *InvalidEntityError) Error() string {
-	var s string
-	if len(strings.TrimSpace(e.Entity)) > 0 {
-		s = fmt.Sprintf("%s: %s", e.Err.Error(), e.Entity)
-	} else {
-		s = e.Err.Error()
-	}
-
-	if len(strings.TrimSpace(e.Context)) > 0 {
-		return fmt.Sprintf(errorContextFmt, e.Context, s)
-	} else {
-		return s
-	}
 }
