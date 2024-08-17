@@ -1,4 +1,2 @@
-- support comment: multi-line comment
-- update documentation of comment usage (skip array, slice and map)
 - support a custom behavior for marshaling and unmarshaling data (https://betterstack.com/community/guides/scaling-go/json-in-go/#defining-custom-behavior-for-marshalling-and-unmarshalling-data)
 using MarshalNano() ([]byte, error), UnmarshalNano([]byte) error

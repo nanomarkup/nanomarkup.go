@@ -10,6 +10,7 @@ import (
 	"nanomarkup.go/nanocomment"
 	"nanomarkup.go/nanodecoder"
 	"nanomarkup.go/nanoerror"
+	"nanomarkup.go/nanometadata"
 	"nanomarkup.go/nanostr"
 )
 
@@ -31,7 +32,7 @@ const (
 	nanoTagOmitEmpty string = "omitempty"
 )
 
-func marshal(data any, meta *Metadata) ([]byte, error) {
+func marshal(data any, meta *nanometadata.Metadata) ([]byte, error) {
 	val := reflect.ValueOf(data)
 	if isValueNil(val) {
 		return []byte(""), nil
@@ -74,7 +75,7 @@ func marshal(data any, meta *Metadata) ([]byte, error) {
 	}
 }
 
-func marshalStruct(data any, meta *Metadata) ([]byte, error) {
+func marshalStruct(data any, meta *nanometadata.Metadata) ([]byte, error) {
 	val := reflect.ValueOf(data)
 	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
@@ -129,7 +130,7 @@ func marshalStruct(data any, meta *Metadata) ([]byte, error) {
 			name = f.Name
 		}
 		// handle a metadata
-		var fmeta *Metadata = nil
+		var fmeta *nanometadata.Metadata = nil
 		if meta != nil {
 			fmeta := meta.GetField(f.Name)
 			if fmeta != nil && len(fmeta.Comments) > 0 {
@@ -189,10 +190,7 @@ func marshalMap(value reflect.Value) ([]byte, error) {
 	return res, nil
 }
 
-func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta *Metadata) error {
-	if meta != nil && meta.fields == nil {
-		meta.fields = make(map[string]*Metadata)
-	}
+func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta *nanometadata.Metadata) error {
 	ind := -1
 	item, ok := d.Next()
 	comments := nanocomment.Comments{}
@@ -246,7 +244,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 				if meta == nil {
 					e = unmarshal(d, v, entity, nil)
 				} else {
-					meta.AddField(name, &Metadata{})
+					meta.AddField(name, &nanometadata.Metadata{})
 					e = unmarshal(d, v, entity, meta.GetField(name))
 				}
 				if e != nil {
@@ -353,7 +351,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 										e = unmarshal(d, vv, entity, nil)
 									} else {
 										name := v.Elem().String()
-										meta.AddField(name, &Metadata{})
+										meta.AddField(name, &nanometadata.Metadata{})
 										e = unmarshal(d, vv, entity, meta.GetField(name))
 									}
 									if e != nil {
@@ -375,7 +373,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 							field.Set(vv)
 						}
 						if meta != nil && len(comments) > 0 {
-							m := Metadata{}
+							m := nanometadata.Metadata{}
 							m.Comments.Adds(comments)
 							meta.AddField(name, &m)
 							comments = nanocomment.Comments{}

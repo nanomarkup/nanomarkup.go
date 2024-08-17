@@ -4,6 +4,8 @@ import (
 	"encoding"
 	"fmt"
 	"testing"
+
+	"nanomarkup.go/nanometadata"
 )
 
 func TestNilMarshal(t *testing.T) {
@@ -263,7 +265,7 @@ func TestMetaIntMarshal(t *testing.T) {
 	in := 1983
 	comment := " A Birthday date"
 	want := fmt.Sprintf("//%s\n%d", comment, in)
-	meta := CreateMetadata(comment, false)
+	meta := nanometadata.CreateMetadata(comment, false)
 	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
@@ -274,7 +276,7 @@ func TestMetaStringMarshal(t *testing.T) {
 	in := "Hello World!"
 	comment := " Hello World comment"
 	want := fmt.Sprintf("//%s\n%s", comment, in)
-	meta := CreateMetadata(comment, false)
+	meta := nanometadata.CreateMetadata(comment, false)
 	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
@@ -288,7 +290,7 @@ line
 value`
 	comment := " A multi-line value"
 	want := fmt.Sprintf("//%s\n`\n%s\n`\n", comment, in)
-	meta := CreateMetadata(comment, false)
+	meta := nanometadata.CreateMetadata(comment, false)
 	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
@@ -299,7 +301,7 @@ func TestMetaBooleanMarshal(t *testing.T) {
 	in := true
 	comment := " Check type of boolean"
 	want := fmt.Sprintf("//%s\n%t", comment, in)
-	meta := CreateMetadata(comment, false)
+	meta := nanometadata.CreateMetadata(comment, false)
 	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
@@ -310,7 +312,7 @@ func TestMetaArrayMarshal(t *testing.T) {
 	in := [3]int{1, 2, 3}
 	comment := " Check type of array"
 	want := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
-	meta := CreateMetadata(comment, false)
+	meta := nanometadata.CreateMetadata(comment, false)
 	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
@@ -321,7 +323,7 @@ func TestMetaSliceMarshal(t *testing.T) {
 	in := []int{1, 2, 3}
 	comment := " Check type of slice"
 	want := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
-	meta := CreateMetadata(comment, false)
+	meta := nanometadata.CreateMetadata(comment, false)
 	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
@@ -332,7 +334,7 @@ func TestMetaMapMarshal(t *testing.T) {
 	in := map[int]int{1: 1, 2: 2, 3: 3}
 	comment := " Check type of map"
 	want := fmt.Sprintf("//%s\n{\n1 1\n2 2\n3 3\n}\n", comment)
-	meta := CreateMetadata(comment, false)
+	meta := nanometadata.CreateMetadata(comment, false)
 	out, err := Marshal(in, meta)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
@@ -346,10 +348,10 @@ func TestMetaStructMarshal(t *testing.T) {
 		Field3 string `nano:"-"`
 		Field4 int    `nano:"Year"`
 	}{0, "Hi!", "Hello!", 2024}
-	meta := CreateMetadata(" Object's comment", false)
-	meta.AddField("Field1", CreateMetadata(" Testing a comment...", false))
-	meta.AddField("Field2", CreateMetadata(" It cannot be empty", false))
-	meta.AddField("Field4", CreateMetadata(" Current year is", false))
+	meta := nanometadata.CreateMetadata(" Object's comment", false)
+	meta.AddField("Field1", nanometadata.CreateMetadata(" Testing a comment...", false))
+	meta.AddField("Field2", nanometadata.CreateMetadata(" It cannot be empty", false))
+	meta.AddField("Field4", nanometadata.CreateMetadata(" Current year is", false))
 	want := `// Object's comment
 {
 // Testing a comment...
@@ -374,7 +376,7 @@ func TestCommentsMarshal(t *testing.T) {
 	single1 := " First single comment"
 	single2 := " Second signle comment"
 	want := fmt.Sprintf("//%s\n%s\n/*%s*/\n//%s\n/*%s*/\n/*%s*/\n%s", single1, empty, multi1, single2, multi2, empty, in)
-	meta := CreateMetadata(single1, false)
+	meta := nanometadata.CreateMetadata(single1, false)
 	meta.Comments.Add(empty, false)
 	meta.Comments.Add(multi1, true)
 	meta.Comments.Add(single2, false)

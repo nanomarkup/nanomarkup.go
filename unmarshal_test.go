@@ -3,6 +3,8 @@ package nanomarkup
 import (
 	"fmt"
 	"testing"
+
+	"nanomarkup.go/nanometadata"
 )
 
 func TestIntUnmarshal(t *testing.T) {
@@ -745,8 +747,8 @@ func TestMetaIntUnmarshal(t *testing.T) {
 	var want int64 = 1983
 	comment := " A Birthday date"
 	in := fmt.Sprintf("//%s\n%d\n", comment, want)
-	mout := Metadata{}
-	mwant := CreateMetadata(comment, false)
+	mout := nanometadata.Metadata{}
+	mwant := nanometadata.CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := checkUnmarshalInt(in, out, want, err)
 	if mout.Comments.String() != mwant.Comments.String() {
@@ -773,8 +775,8 @@ func TestMetaStringUnmarshal(t *testing.T) {
 	comment := " Hello World comment"
 	in := fmt.Sprintf("//%s\n%s\n", comment, want)
 	out := ""
-	mout := Metadata{}
-	mwant := CreateMetadata(comment, false)
+	mout := nanometadata.Metadata{}
+	mwant := nanometadata.CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := checkUnmarshalString(in, out, want, err)
 	if mout.Comments.String() != mwant.Comments.String() {
@@ -804,8 +806,8 @@ value`
 	comment := " A multi-line value"
 	in := fmt.Sprintf("//%s\n`\n%s\n`\n", comment, want)
 	out := ""
-	mout := Metadata{}
-	mwant := CreateMetadata(comment, false)
+	mout := nanometadata.Metadata{}
+	mwant := nanometadata.CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := checkUnmarshalString(in, out, want, err)
 	if mout.Comments.String() != mwant.Comments.String() {
@@ -832,8 +834,8 @@ func TestMetaBooleanUnmarshal(t *testing.T) {
 	comment := " Check type of boolean"
 	in := fmt.Sprintf("//%s\n%t\n", comment, want)
 	out := false
-	mout := Metadata{}
-	mwant := CreateMetadata(comment, false)
+	mout := nanometadata.Metadata{}
+	mwant := nanometadata.CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := checkUnmarshalBool(in, out, want, err)
 	if mout.Comments.String() != mwant.Comments.String() {
@@ -860,8 +862,8 @@ func TestMetaArrayUnmarshal(t *testing.T) {
 	comment := " Check type of array"
 	in := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
 	out := [3]int{}
-	mout := Metadata{}
-	mwant := CreateMetadata(comment, false)
+	mout := nanometadata.Metadata{}
+	mwant := nanometadata.CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := ""
 	if out != want || mout.Comments.String() != mwant.Comments.String() {
@@ -884,8 +886,8 @@ func TestMetaSliceUnmarshal(t *testing.T) {
 	comment := " Check type of slice"
 	in := fmt.Sprintf("//%s\n[\n1\n2\n3\n]\n", comment)
 	out := []int{}
-	mout := Metadata{}
-	mwant := CreateMetadata(comment, false)
+	mout := nanometadata.Metadata{}
+	mwant := nanometadata.CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := ""
 	pass := len(want) == len(out)
@@ -917,8 +919,8 @@ func TestMetaMapUnmarshal(t *testing.T) {
 	comment := " Check type of map"
 	in := fmt.Sprintf("//%s\n{\n1 1\n2 2\n3 3\n}\n", comment)
 	out := map[int]int{}
-	mout := Metadata{}
-	mwant := CreateMetadata(comment, false)
+	mout := nanometadata.Metadata{}
+	mwant := nanometadata.CreateMetadata(comment, false)
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := ""
 	pass := len(want) == len(out)
@@ -963,12 +965,12 @@ Year 2024
 }
 `
 	want := t1{0, "Hi!", "", 2024}
-	mwant := CreateMetadata(" Object's comment", false)
-	mwant.AddField("Field1", CreateMetadata(" Testing a comment...", false))
-	mwant.AddField("Field2", CreateMetadata(" It cannot be empty", false))
-	mwant.AddField("Field4", CreateMetadata(" Current year is", false))
+	mwant := nanometadata.CreateMetadata(" Object's comment", false)
+	mwant.AddField("Field1", nanometadata.CreateMetadata(" Testing a comment...", false))
+	mwant.AddField("Field2", nanometadata.CreateMetadata(" It cannot be empty", false))
+	mwant.AddField("Field4", nanometadata.CreateMetadata(" Current year is", false))
 	out := t1{}
-	mout := Metadata{}
+	mout := nanometadata.Metadata{}
 	err := Unmarshal([]byte(in), &out, &mout)
 	mes := ""
 
@@ -1006,8 +1008,8 @@ func TestCommentsUnmarshal(t *testing.T) {
 	single2 := " Second signle comment"
 	in := fmt.Sprintf("//%s\n%s\n/*%s*/\n//%s\n/*%s*/\n/*%s*/\n%s", single1, empty, multi1, single2, multi2, empty, want)
 	out := ""
-	mout := Metadata{}
-	mwant := CreateMetadata(single1, false)
+	mout := nanometadata.Metadata{}
+	mwant := nanometadata.CreateMetadata(single1, false)
 	mwant.Comments.Add(empty, false)
 	mwant.Comments.Add(multi1, true)
 	mwant.Comments.Add(single2, false)

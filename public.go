@@ -9,24 +9,14 @@ import (
 	"nanomarkup.go/nanocomment"
 	"nanomarkup.go/nanodecoder"
 	"nanomarkup.go/nanoerror"
+	"nanomarkup.go/nanometadata"
 	"nanomarkup.go/nanostr"
 )
-
-type Metadata struct {
-	fields   map[string]*Metadata
-	Comments nanocomment.Comments
-}
-
-func CreateMetadata(comment string, multiline bool) *Metadata {
-	m := Metadata{}
-	m.Comments.Add(comment, multiline)
-	return &m
-}
 
 // Marshal returns the encoding data for the input value.
 //
 // It traverses the value recursively.
-func Marshal(data any, meta *Metadata) ([]byte, error) {
+func Marshal(data any, meta *nanometadata.Metadata) ([]byte, error) {
 	val := reflect.ValueOf(data)
 	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
@@ -98,7 +88,7 @@ func MarshalIndent(data any, prefix, indent string) ([]byte, error) {
 //
 // It uses the inverse of the encodings that Marshal uses, allocating
 // maps, slices, and pointers as necessary.
-func Unmarshal(data []byte, v any, meta *Metadata) error {
+func Unmarshal(data []byte, v any, meta *nanometadata.Metadata) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer {
 		return &nanoerror.InvalidArgumentError{Context: "Unmarshal", Err: fmt.Errorf("the second argument is not a Pointer")}

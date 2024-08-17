@@ -1,4 +1,4 @@
-package nanomarkup
+package nanometadata
 
 func (m *Metadata) AddField(name string, data *Metadata) {
 	if m.fields == nil {
