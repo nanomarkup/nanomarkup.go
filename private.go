@@ -205,7 +205,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 		case 91: // [
 			val := item[1:]
 			if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
-				return &nanoerror.InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an array must be started from a new line")}
+				return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: string(item), Err: fmt.Errorf("the data of an array must be started from a new line")}
 			}
 			if curr == undefined {
 				// set the current type and continue the parsing the rest of data
@@ -225,12 +225,12 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 			if curr == array {
 				return nil
 			} else {
-				return &nanoerror.InvalidEntityError{"Unmarshal", "", fmt.Errorf("'[' is missing")}
+				return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: "", Err: fmt.Errorf("'[' is missing")}
 			}
 		case 123: // {
 			val := item[1:]
 			if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
-				return &nanoerror.InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an entity must be started from a new line")}
+				return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: string(item), Err: fmt.Errorf("the data of an entity must be started from a new line")}
 			}
 			if curr == undefined {
 				// set the current type and continue the parsing the rest of data
@@ -257,7 +257,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 			if curr == entity {
 				return nil
 			} else {
-				return &nanoerror.InvalidEntityError{"Unmarshal", "", fmt.Errorf("'}' is missing")}
+				return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: "", Err: fmt.Errorf("'}' is missing")}
 			}
 		default:
 			comms, err := nanocomment.Unmarshal(d, item)
@@ -334,7 +334,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 							case 91: // [
 								val := vs[1:]
 								if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
-									return &nanoerror.InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an array must be started from a new line")}
+									return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: string(item), Err: fmt.Errorf("the data of an array must be started from a new line")}
 								} else {
 									// it is an internal array, parse it using other thread/loop
 									e := unmarshal(d, vv, array, meta)
@@ -345,7 +345,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 							case 123: // {
 								val := vs[1:]
 								if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
-									return &nanoerror.InvalidEntityError{"Unmarshal", string(item), fmt.Errorf("the data of an entity must be started from a new line")}
+									return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: string(item), Err: fmt.Errorf("the data of an entity must be started from a new line")}
 								} else {
 									// it is an internal entity, parse it using other thread/loop
 									var e error
@@ -396,9 +396,9 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 	// check the end/close operator
 	switch curr {
 	case array:
-		return &nanoerror.InvalidEntityError{"Unmarshal", "", fmt.Errorf("']' is missing")}
+		return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: "", Err: fmt.Errorf("']' is missing")}
 	case entity:
-		return &nanoerror.InvalidEntityError{"Unmarshal", "", fmt.Errorf("'}' is missing")}
+		return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: "", Err: fmt.Errorf("'}' is missing")}
 	}
 	return nil
 }
@@ -476,7 +476,7 @@ func unmarshalValue(v reflect.Value, s string) error {
 		v.SetUint(uint64(n))
 		return nil
 	case reflect.Uintptr:
-		return &nanoerror.InvalidArgumentError{"Unmarshal", fmt.Errorf("uintptr type of the second argument is not supported")}
+		return &nanoerror.InvalidArgumentError{Context: "Unmarshal", Err: fmt.Errorf("uintptr type of the second argument is not supported")}
 	case reflect.Float32:
 		n, e := strconv.ParseFloat(s, 32)
 		if e != nil {
@@ -516,7 +516,7 @@ func unmarshalValue(v reflect.Value, s string) error {
 		v.SetBool(n)
 		return nil
 	default:
-		return &nanoerror.InvalidEntityError{"Unmarshal", s, fmt.Errorf("cannot decode the entity")}
+		return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: s, Err: fmt.Errorf("cannot decode the entity")}
 	}
 }
 
@@ -632,7 +632,7 @@ func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
 		case 91: // [
 			val := item[1:]
 			if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
-				err = &nanoerror.InvalidEntityError{"Indent", string(item), fmt.Errorf("the data of an array must be started from a new line")}
+				err = &nanoerror.InvalidEntityError{Context: "Indent", Entity: string(item), Err: fmt.Errorf("the data of an array must be started from a new line")}
 				break
 			}
 			if first {
@@ -645,7 +645,7 @@ func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
 			currIndent += indent
 		case 93, 125: // ], }
 			if level == 0 {
-				err = &nanoerror.InvalidEntityError{"Indent", string(item), fmt.Errorf("invalid data")}
+				err = &nanoerror.InvalidEntityError{Context: "Indent", Entity: string(item), Err: fmt.Errorf("invalid data")}
 				break
 			}
 			level--
@@ -658,7 +658,7 @@ func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {
 		case 123: // {
 			val := item[1:]
 			if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
-				err = &nanoerror.InvalidEntityError{"Indent", string(item), fmt.Errorf("the data of an entity must be started from a new line")}
+				err = &nanoerror.InvalidEntityError{Context: "Indent", Entity: string(item), Err: fmt.Errorf("the data of an entity must be started from a new line")}
 				break
 			}
 			if first {
@@ -756,7 +756,7 @@ func appendIndentMultiline(d *nanodecoder.Decoder, prefix, currIndent string, fi
 
 	val := item[1:]
 	if len(val) > 0 && len(strings.TrimSpace(string(val))) > 0 {
-		return nil, &nanoerror.InvalidEntityError{"Indent", string(item), fmt.Errorf("the data of a multi-line value must be started from a new line")}
+		return nil, &nanoerror.InvalidEntityError{Context: "Indent", Entity: string(item), Err: fmt.Errorf("the data of a multi-line value must be started from a new line")}
 	}
 	if first {
 		first = false
@@ -781,6 +781,6 @@ func appendIndentMultiline(d *nanodecoder.Decoder, prefix, currIndent string, fi
 		dst = append(dst, []byte(currIndent+string(item)+"\n")...)
 		return dst, nil
 	} else {
-		return nil, &nanoerror.InvalidEntityError{"Indent", "", fmt.Errorf("'`' is missing")}
+		return nil, &nanoerror.InvalidEntityError{Context: "Indent", Entity: "", Err: fmt.Errorf("'`' is missing")}
 	}
 }

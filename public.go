@@ -101,14 +101,14 @@ func MarshalIndent(data any, prefix, indent string) ([]byte, error) {
 func Unmarshal(data []byte, v any, meta *Metadata) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Pointer {
-		return &nanoerror.InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is not a Pointer")}
+		return &nanoerror.InvalidArgumentError{Context: "Unmarshal", Err: fmt.Errorf("the second argument is not a Pointer")}
 	}
 	if rv.IsNil() {
-		return &nanoerror.InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is Nil")}
+		return &nanoerror.InvalidArgumentError{Context: "Unmarshal", Err: fmt.Errorf("the second argument is Nil")}
 	}
 	elem := rv.Elem()
 	if !elem.CanSet() {
-		return &nanoerror.InvalidArgumentError{"Unmarshal", fmt.Errorf("the second argument is not settable")}
+		return &nanoerror.InvalidArgumentError{Context: "Unmarshal", Err: fmt.Errorf("the second argument is not settable")}
 	}
 	d := nanodecoder.Decoder{}
 	d.Init(bytes.Split(data, []byte("\n")))
