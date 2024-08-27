@@ -2,6 +2,7 @@ package nanomarkup
 
 import (
 	"bytes"
+	"encoding"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -81,6 +82,14 @@ func marshalStruct(data any, meta *nanometadata.Metadata) ([]byte, error) {
 		val = val.Elem()
 	}
 	typ := val.Type()
+	// check MarshalNano and MarshalText methods
+	out, err := marshalStructByMethod(typ, val)
+	if err != nil {
+		return nil, err
+	} else if out != nil {
+		return out, nil
+	}
+	// marshal the struct
 	res := []byte("{\n")
 	for _, f := range reflect.VisibleFields(typ) {
 		if !f.IsExported() {
@@ -151,6 +160,40 @@ func marshalStruct(data any, meta *nanometadata.Metadata) ([]byte, error) {
 	return res, nil
 }
 
+func marshalStructByMethod(typ reflect.Type, val reflect.Value) ([]byte, error) {
+	// check Nano Marshaler
+	marshaler := reflect.TypeOf((*Marshaler)(nil)).Elem()
+	if typ.Implements(marshaler) {
+		if m, ok := val.Interface().(Marshaler); ok {
+			o, err := m.MarshalNano()
+			if err == nil {
+				out := []byte("{\n")
+				out = append(out, o...)
+				out = append(out, []byte("\n}\n")...)
+				return out, nil
+			} else {
+				return nil, err
+			}
+		}
+	}
+	// check Text Marshaler
+	marshaler = reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()
+	if typ.Implements(marshaler) {
+		if m, ok := val.Interface().(encoding.TextMarshaler); ok {
+			o, err := m.MarshalText()
+			if err == nil {
+				out := []byte("{\n")
+				out = append(out, o...)
+				out = append(out, []byte("\n}\n")...)
+				return out, nil
+			} else {
+				return nil, err
+			}
+		}
+	}
+	return nil, nil
+}
+
 func marshalSlice(value reflect.Value) ([]byte, error) {
 	res := []byte("[\n")
 	for i := 0; i < value.Len(); i++ {
@@ -190,7 +233,7 @@ func marshalMap(value reflect.Value) ([]byte, error) {
 	return res, nil
 }
 
-func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta *nanometadata.Metadata) error {
+func unmarshal(d *nanodecoder.Decoder, elem reflect.Value, curr unmarshalType, meta *nanometadata.Metadata) error {
 	ind := -1
 	item, ok := d.Next()
 	comments := nanocomment.Comments{}
@@ -214,7 +257,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 				}
 			} else {
 				// it is an internal array, parse it using other thread/loop
-				e := unmarshal(d, v, array, meta)
+				e := unmarshal(d, elem, array, meta)
 				if e != nil {
 					return e
 				}
@@ -239,13 +282,13 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 				}
 			} else {
 				// it is an internal entity, parse it using other thread/loop
-				name := v.Elem().String()
+				name := elem.Elem().String()
 				var e error
 				if meta == nil {
-					e = unmarshal(d, v, entity, nil)
+					e = unmarshal(d, elem, entity, nil)
 				} else {
 					meta.AddField(name, &nanometadata.Metadata{})
-					e = unmarshal(d, v, entity, meta.GetField(name))
+					e = unmarshal(d, elem, entity, meta.GetField(name))
 				}
 				if e != nil {
 					return e
@@ -272,20 +315,28 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 				return err
 			}
 
-			switch v.Kind() {
+			switch elem.Kind() {
 			case reflect.Array:
 				ind++
-				elem := v.Index(ind)
+				elem := elem.Index(ind)
 				if e := unmarshalValue(elem, string(item)); e != nil {
 					return e
 				}
 			case reflect.Slice:
-				val := reflect.New(v.Type().Elem()).Elem()
+				val := reflect.New(elem.Type().Elem()).Elem()
 				if e := unmarshalValue(val, string(item)); e != nil {
 					return e
 				}
-				v.Set(reflect.Append(v, val))
+				elem.Set(reflect.Append(elem, val))
 			case reflect.Map, reflect.Struct:
+				// check UnmarshalNano and UnmarshalText methods
+				ok, e := unmarshalStructByMethod(d, elem)
+				if e != nil {
+					return e
+				} else if ok {
+					continue
+				}
+				// unmarshal the struct/map
 				s := bytes.TrimLeft(item, " \t")
 				var ks []byte
 				var vs []byte
@@ -302,29 +353,30 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 					return err
 				}
 
-				if v.Kind() == reflect.Map {
-					kv := reflect.New(v.Type().Key()).Elem()
-					vv := reflect.New(v.Type().Elem()).Elem()
+				if elem.Kind() == reflect.Map {
+					kv := reflect.New(elem.Type().Key()).Elem()
+					vv := reflect.New(elem.Type().Elem()).Elem()
 					if e := unmarshalValue(kv, string(ks)); e != nil {
 						return e
 					}
 					if e := unmarshalValue(vv, string(vs)); e != nil {
 						return e
 					}
-					v.SetMapIndex(kv, vv)
+					elem.SetMapIndex(kv, vv)
 				} else {
-					if field, name, omitempty := getField(v, string(ks)); field.IsValid() {
+					if field, name, omitempty := getField(elem, string(ks)); field.IsValid() {
 						var vv reflect.Value
-						if field.Type().Kind() == reflect.Pointer {
-							if field.Type().Elem().Kind() == reflect.Map {
-								vv = reflect.MakeMap(field.Type().Elem())
+						tt := field.Type()
+						if tt.Kind() == reflect.Pointer {
+							if tt.Elem().Kind() == reflect.Map {
+								vv = reflect.MakeMap(tt.Elem())
 							} else {
-								vv = reflect.New(field.Type().Elem()).Elem()
+								vv = reflect.New(tt.Elem()).Elem()
 							}
-						} else if field.Type().Kind() == reflect.Map {
-							vv = reflect.MakeMap(field.Type())
+						} else if tt.Kind() == reflect.Map {
+							vv = reflect.MakeMap(tt)
 						} else {
-							vv = reflect.New(field.Type()).Elem()
+							vv = reflect.New(tt).Elem()
 						}
 						if len(vs) > 0 {
 							// check for an inline entity/array
@@ -346,11 +398,18 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 									return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: string(item), Err: fmt.Errorf("the data of an entity must be started from a new line")}
 								} else {
 									// it is an internal entity, parse it using other thread/loop
-									var e error
+									// check UnmarshalNano and UnmarshalText methods
+									ok, e := unmarshalStructByMethod(d, field)
+									if e != nil {
+										return e
+									} else if ok {
+										continue
+									}
+									// unmarshal the struct/map
 									if meta == nil {
 										e = unmarshal(d, vv, entity, nil)
 									} else {
-										name := v.Elem().String()
+										name := elem.Elem().String()
 										meta.AddField(name, &nanometadata.Metadata{})
 										e = unmarshal(d, vv, entity, meta.GetField(name))
 									}
@@ -367,7 +426,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 						if bool(omitempty) && isEmpty(vv.Interface()) {
 							continue
 						}
-						if field.Type().Kind() == reflect.Pointer {
+						if tt.Kind() == reflect.Pointer {
 							field.Set(vv.Addr())
 						} else {
 							field.Set(vv)
@@ -385,7 +444,7 @@ func unmarshal(d *nanodecoder.Decoder, v reflect.Value, curr unmarshalType, meta
 					meta.Comments.Adds(comments)
 					comments = nanocomment.Comments{}
 				}
-				if e := unmarshalValue(v, string(item)); e != nil {
+				if e := unmarshalValue(elem, string(item)); e != nil {
 					return e
 				}
 			}
@@ -518,6 +577,47 @@ func unmarshalValue(v reflect.Value, s string) error {
 	}
 }
 
+func unmarshalStructByMethod(d *nanodecoder.Decoder, val reflect.Value) (bool, error) {
+	if val.Kind() != reflect.Ptr {
+		return false, nil
+	}
+	// check NanoUnmarshaler
+	unmarshaler := reflect.TypeOf((*Unmarshaler)(nil)).Elem()
+	if val.Type().Implements(unmarshaler) {
+		m := val.Interface()
+		if m, ok := (m).(Unmarshaler); ok {
+			in, err := getUnmarshalData(d)
+			if err != nil {
+				return false, err
+			}
+			err = m.UnmarshalNano(in)
+			if err == nil {
+				return true, nil
+			} else {
+				return false, err
+			}
+		}
+	}
+	// check TextUnmarshaler
+	unmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+	if val.Type().Implements(unmarshaler) {
+		m := val.Interface()
+		if m, ok := (m).(encoding.TextUnmarshaler); ok {
+			in, err := getUnmarshalData(d)
+			if err != nil {
+				return false, err
+			}
+			err = m.UnmarshalText(in)
+			if err == nil {
+				return true, nil
+			} else {
+				return false, err
+			}
+		}
+	}
+	return false, nil
+}
+
 func isEmpty(v interface{}) bool {
 	if v == nil {
 		return true
@@ -610,6 +710,60 @@ func getField(src reflect.Value, name string) (reflect.Value, string, omitEmpty)
 		}
 		return rValue, sf.Name, false
 	}
+}
+
+func getUnmarshalData(d *nanodecoder.Decoder) ([]byte, error) {
+	res := []byte{}
+	curr, ok := d.Curr()
+	if !ok {
+		return res, nil
+	}
+	curr = bytes.TrimRight(curr, " ")
+	if !bytes.HasSuffix(curr, []byte{123}) { // {
+		return res, nil
+	}
+	var i int = 1
+	var l int = 0
+	var org []byte
+	item, ok := d.Next()
+	for ; ok; item, ok = d.Next() {
+		org = item
+		item = bytes.TrimLeft(org, " \t")
+		if len(item) == 0 {
+			res = append(res, org...)
+			continue
+		}
+		// check comments
+		comms, err := nanocomment.Unmarshal(d, item)
+		if err != nil {
+			return []byte{}, err
+		} else if len(comms) > 0 {
+			res = append(res, []byte(comms.String())...)
+			continue
+		}
+		// check multi-line value
+		if item[0] == 96 { // `
+			str, err := nanostr.Unmarshal(d, item)
+			if err != nil {
+				return []byte{}, err
+			}
+			res = append(res, str...)
+			continue
+		}
+		// check the last char is '{' or '}'
+		item = bytes.TrimRight(item, " ")
+		l = len(item)
+		if item[l-1] == 123 { // {
+			i++
+		} else if l == 1 && item[0] == 125 { // }
+			i--
+			if i == 0 {
+				return res, nil
+			}
+		}
+		res = append(res, org...)
+	}
+	return res, nil
 }
 
 func appendIndent(dst, src []byte, prefix, indent string) ([]byte, error) {

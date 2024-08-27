@@ -5,7 +5,26 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 )
+
+type customTime struct {
+	time.Time
+}
+
+func (t customTime) getTimeFormat() string {
+	return "15:04 02-01-2006 MST"
+}
+
+func (t customTime) MarshalNano() ([]byte, error) {
+	return []byte(t.Format(t.getTimeFormat())), nil
+}
+
+func (t *customTime) UnmarshalNano(value []byte) error {
+	var err error
+	t.Time, err = time.Parse(t.getTimeFormat(), string(value))
+	return err
+}
 
 func anyToStr(v any) string {
 	val := reflect.ValueOf(v)

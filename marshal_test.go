@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"fmt"
 	"testing"
+	"time"
 
 	"nanomarkup.go/nanometadata"
 )
@@ -331,13 +332,23 @@ func TestMetaSliceMarshal(t *testing.T) {
 }
 
 func TestMetaMapMarshal(t *testing.T) {
-	in := map[int]int{1: 1, 2: 2, 3: 3}
+	in := map[int]int{1: 1, 2: 2}
 	comment := " Check type of map"
-	want := fmt.Sprintf("//%s\n{\n1 1\n2 2\n3 3\n}\n", comment)
 	meta := nanometadata.CreateMetadata(comment, false)
 	out, err := Marshal(in, meta)
-	if s := checkMarshal(in, out, want, err); s != "" {
-		t.Error(s)
+	// a map does not keep an element order
+	want1 := fmt.Sprintf("//%s\n{\n1 1\n2 2\n}\n", comment)
+	want2 := fmt.Sprintf("//%s\n{\n2 2\n1 1\n}\n", comment)
+	s1 := checkMarshal(in, out, want1, err)
+	s2 := checkMarshal(in, out, want2, err)
+	if s1 == "" || s2 == "" {
+		return
+	} else {
+		if s1 != "" {
+			t.Error(s1)
+		} else {
+			t.Error(s2)
+		}
 	}
 }
 
@@ -383,6 +394,26 @@ func TestCommentsMarshal(t *testing.T) {
 	meta.Comments.Add(multi2, true)
 	meta.Comments.Add(empty, true)
 	out, err := Marshal(in, meta)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestCustomMarshal(t *testing.T) {
+	in := struct {
+		Today time.Time
+	}{time.Date(1983, 12, 20, 19, 30, 0, 0, time.Local)}
+	want := "{\nToday {\n1983-12-20T19:30:00-05:00\n}\n}\n"
+	out, err := Marshal(in, nil)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+
+	in2 := struct {
+		Today customTime
+	}{customTime{time.Date(1983, 12, 20, 19, 30, 0, 0, time.Local)}}
+	want = fmt.Sprintf("{\nToday {\n%s\n}\n}\n", in2.Today.Format(in2.Today.getTimeFormat()))
+	out, err = Marshal(in2, nil)
 	if s := checkMarshal(in, out, want, err); s != "" {
 		t.Error(s)
 	}

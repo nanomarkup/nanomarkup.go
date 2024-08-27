@@ -3,6 +3,7 @@ package nanomarkup
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"nanomarkup.go/nanometadata"
 )
@@ -1023,6 +1024,62 @@ func TestCommentsUnmarshal(t *testing.T) {
 		} else {
 			mes = fmt.Sprintf("; out meta: %v\nwant meta: %v", mout, mwant)
 		}
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestCustomUnmarshalText(t *testing.T) {
+	// test UnmarshalText
+	type customStruct struct {
+		Today *time.Time
+	}
+	birthday := time.Date(1983, 12, 20, 19, 30, 0, 0, time.Local)
+	want := customStruct{&birthday}
+	in, err := Marshal(&want, nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	out := customStruct{&time.Time{}}
+	err = Unmarshal([]byte(in), &out, nil)
+	mes := ""
+	if !out.Today.Equal(*want.Today) {
+		mes = fmt.Sprintf("[Unmarshal] in: %s\nout: %v; want: %v", in, out, want)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+	// test UnmarshalNano
+	type customStruct2 struct {
+		Today *customTime
+	}
+	want2 := customStruct2{&customTime{birthday}}
+	in, err = Marshal(&want2, nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	out2 := customStruct2{&customTime{}}
+	err = Unmarshal([]byte(in), &out2, nil)
+	mes = ""
+	if !out2.Today.Time.Equal(want2.Today.Time) {
+		mes = fmt.Sprintf("[Unmarshal] in: %s\nout: %v; want: %v", in, out2, want2)
 	}
 	if err != nil {
 		if mes == "" {

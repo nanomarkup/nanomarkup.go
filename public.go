@@ -13,6 +13,14 @@ import (
 	"nanomarkup.go/nanostr"
 )
 
+type Marshaler interface {
+	MarshalNano() ([]byte, error)
+}
+
+type Unmarshaler interface {
+	UnmarshalNano([]byte) error
+}
+
 // Marshal returns the encoding data for the input value.
 //
 // It traverses the value recursively.
@@ -60,10 +68,19 @@ func Marshal(data any, meta *nanometadata.Metadata) ([]byte, error) {
 			}
 		}
 	case reflect.Struct:
-		if o, err := marshalStruct(data, meta); err == nil {
-			out = append(out, o...)
-		} else {
-			out = []byte("")
+		typ := val.Type()
+		// check MarshalNano and MarshalText methods before to do the marshaling
+		if o, err := marshalStructByMethod(typ, val); err == nil {
+			if o != nil {
+				out = append(out, o...)
+			} else {
+				// marshal the struct
+				if o, err := marshalStruct(data, meta); err == nil {
+					out = append(out, o...)
+				} else {
+					out = []byte("")
+				}
+			}
 		}
 	}
 	return out, err

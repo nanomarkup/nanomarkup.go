@@ -18,3 +18,10 @@ func Unmarshal(data []byte, v any, meta *nanometadata.Metadata) error
     not a pointer, Unmarshal returns an InvalidArgumentError.
     It uses the inverse of the encodings that Marshal uses, allocating maps,
     slices, and pointers as necessary.
+TYPES
+type Marshaler interface {
+	MarshalNano() ([]byte, error)
+}
+type Unmarshaler interface {
+	UnmarshalNano([]byte) error
+}
