@@ -1,4 +1,4 @@
-package nanomarkup // import "nanomarkup.go"
+package nanomarkup // import "github.com/nanomarkup/nanomarkup.go"
 FUNCTIONS
 func Compact(dst *bytes.Buffer, src []byte) error
     Compact appends the nano-encoded src to dst, eliminating insignificant space

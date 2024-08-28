@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"nanomarkup.go/nanodecoder"
-	"nanomarkup.go/nanoerror"
+	"github.com/nanomarkup/nanomarkup.go/nanodecoder"
+	"github.com/nanomarkup/nanomarkup.go/nanoerror"
 )
 
 func Marshal(value string) []byte {

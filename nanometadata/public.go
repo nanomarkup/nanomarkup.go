@@ -1,6 +1,6 @@
 package nanometadata
 
-import "nanomarkup.go/nanocomment"
+import "github.com/nanomarkup/nanomarkup.go/nanocomment"
 
 type Metadata struct {
 	fields   map[string]*Metadata

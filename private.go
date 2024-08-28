@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	"nanomarkup.go/nanocomment"
-	"nanomarkup.go/nanodecoder"
-	"nanomarkup.go/nanoerror"
-	"nanomarkup.go/nanometadata"
-	"nanomarkup.go/nanostr"
+	"github.com/nanomarkup/nanomarkup.go/nanocomment"
+	"github.com/nanomarkup/nanomarkup.go/nanodecoder"
+	"github.com/nanomarkup/nanomarkup.go/nanoerror"
+	"github.com/nanomarkup/nanomarkup.go/nanometadata"
+	"github.com/nanomarkup/nanomarkup.go/nanostr"
 )
 
 type omitEmpty bool

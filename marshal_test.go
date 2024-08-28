@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"nanomarkup.go/nanometadata"
+	"github.com/nanomarkup/nanomarkup.go/nanometadata"
 )
 
 func TestNilMarshal(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"nanomarkup.go/nanodecoder"
+	"github.com/nanomarkup/nanomarkup.go/nanodecoder"
 )
 
 type Comment struct {
