@@ -456,6 +456,11 @@ func unmarshal(d *nanodecoder.Decoder, elem reflect.Value, curr unmarshalType, m
 							meta.AddField(name, &m)
 							comments = nanocomment.Comments{}
 						}
+					} else {
+						_, err := getUnmarshalData(d)
+						if err != nil {
+							return err
+						}
 					}
 				}
 			default:
