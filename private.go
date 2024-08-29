@@ -427,7 +427,13 @@ func unmarshal(d *nanodecoder.Decoder, elem reflect.Value, curr unmarshalType, m
 							continue
 						}
 						if tt.Kind() == reflect.Pointer {
-							field.Set(vv.Addr())
+							if vv.CanAddr() {
+								field.Set(vv.Addr())
+							} else {
+								pp := reflect.New(tt.Elem())
+								pp.Elem().Set(vv)
+								field.Set(pp)
+							}
 						} else {
 							field.Set(vv)
 						}
