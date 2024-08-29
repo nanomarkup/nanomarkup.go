@@ -591,6 +591,79 @@ func TestMapUnmarshal(t *testing.T) {
 	}
 }
 
+func TestStructMapUnmarshal(t *testing.T) {
+	// test a map
+	type test struct {
+		Log map[string]string
+	}
+	want := test{map[string]string{"Username": "John"}}
+	in := "{\nLog {\nUsername John\n}\n}\n"
+	out := test{map[string]string{}}
+	err := Unmarshal([]byte(in), &out, nil)
+	mes := ""
+	pass := len(want.Log) == len(out.Log)
+	if !pass {
+		mes = fmt.Sprintf("[Unmarshal] out: %v\nwant: %v", out.Log, want.Log)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+		return
+	}
+	// test a pointer to a map
+	type ptest struct {
+		Log *map[string]string
+	}
+	want2 := ptest{&map[string]string{"Username": "John"}}
+	in = "{\nLog {\nUsername John\n}\n}\n"
+	out2 := ptest{&map[string]string{}}
+	err = Unmarshal([]byte(in), &out2, nil)
+	mes = ""
+	pass = len(*want2.Log) == len(*out2.Log)
+	if !pass {
+		mes = fmt.Sprintf("[Unmarshal] out: %v\nwant: %v", *out2.Log, *want2.Log)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+	}
+}
+
+func TestMapMapUnmarshal(t *testing.T) {
+	want := map[string]map[string]string{"Log": map[string]string{"Username": "John"}}
+	in := "{\nLog {\nUsername John\n}\n}\n"
+	out := map[string]map[string]string{}
+	err := Unmarshal([]byte(in), &out, nil)
+	mes := ""
+	pass := len(want) == len(out) && want["Log"]["Username"] == out["Log"]["Username"]
+	if !pass {
+		mes = fmt.Sprintf("[Unmarshal] out: %v\nwant: %v", out, want)
+	}
+	if err != nil {
+		if mes == "" {
+			mes = "[Unmarshal]: " + err.Error()
+		} else {
+			mes += "; error: " + err.Error()
+		}
+	}
+	if mes != "" {
+		t.Error(mes)
+		return
+	}
+}
+
 func TestStructUnmarshal(t *testing.T) {
 	type t1 struct {
 		TestInt int
@@ -935,56 +1008,6 @@ func TestMetaMapUnmarshal(t *testing.T) {
 	}
 	if !pass || mout.Comments.String() != mwant.Comments.String() {
 		mes = fmt.Sprintf("[Unmarshal] out meta: %v\nwant meta: %v", mout, mwant)
-	}
-	if err != nil {
-		if mes == "" {
-			mes = "[Unmarshal]: " + err.Error()
-		} else {
-			mes += "; error: " + err.Error()
-		}
-	}
-	if mes != "" {
-		t.Error(mes)
-	}
-}
-
-func TestMetaMap2Unmarshal(t *testing.T) {
-	// test a map
-	type test struct {
-		Log map[string]string
-	}
-	want := test{map[string]string{"Username": "John"}}
-	in := "\n{\nLog {\nUsername John\n}\n}\n"
-	out := test{map[string]string{}}
-	err := Unmarshal([]byte(in), &out, nil)
-	mes := ""
-	pass := len(want.Log) == len(out.Log)
-	if !pass {
-		mes = fmt.Sprintf("[Unmarshal] out: %v\nwant: %v", out.Log, want.Log)
-	}
-	if err != nil {
-		if mes == "" {
-			mes = "[Unmarshal]: " + err.Error()
-		} else {
-			mes += "; error: " + err.Error()
-		}
-	}
-	if mes != "" {
-		t.Error(mes)
-		return
-	}
-	// test a pointer to a map
-	type ptest struct {
-		Log *map[string]string
-	}
-	want2 := ptest{&map[string]string{"Username": "John"}}
-	in = "\n{\nLog {\nUsername John\n}\n}\n"
-	out2 := ptest{&map[string]string{}}
-	err = Unmarshal([]byte(in), &out2, nil)
-	mes = ""
-	pass = len(*want2.Log) == len(*out2.Log)
-	if !pass {
-		mes = fmt.Sprintf("[Unmarshal] out: %v\nwant: %v", *out2.Log, *want2.Log)
 	}
 	if err != nil {
 		if mes == "" {

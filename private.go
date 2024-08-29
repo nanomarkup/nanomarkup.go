@@ -58,13 +58,13 @@ func marshal(data any, meta *nanometadata.Metadata) ([]byte, error) {
 		if val.Len() == 0 {
 			return []byte("[\n]\n"), nil
 		} else {
-			return marshalMap(val)
+			return marshalSlice(val)
 		}
 	case reflect.Map:
 		if val.Len() == 0 {
 			return []byte("{\n}\n"), nil
 		} else {
-			return marshalSlice(val)
+			return marshalMap(val)
 		}
 	case reflect.Struct:
 		if val.IsZero() {
@@ -359,7 +359,20 @@ func unmarshal(d *nanodecoder.Decoder, elem reflect.Value, curr unmarshalType, m
 					if e := unmarshalValue(kv, string(ks)); e != nil {
 						return e
 					}
-					if e := unmarshalValue(vv, string(vs)); e != nil {
+					// check inline entity
+					if len(vs) == 1 && vs[0] == 123 { // {
+						if vv.IsNil() {
+							tt := vv.Type()
+							if vv.Kind() == reflect.Pointer {
+								vv = reflect.MakeMap(tt.Elem())
+							} else if tt.Kind() == reflect.Map {
+								vv = reflect.MakeMap(tt)
+							} else {
+								vv = reflect.New(tt).Elem()
+							}
+						}
+						unmarshal(d, vv, entity, meta)
+					} else if e := unmarshalValue(vv, string(vs)); e != nil {
 						return e
 					}
 					elem.SetMapIndex(kv, vv)

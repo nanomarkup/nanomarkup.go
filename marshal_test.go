@@ -220,6 +220,27 @@ func TestMapMarshal(t *testing.T) {
 	}
 }
 
+func TestStructMapMarshal(t *testing.T) {
+	type test struct {
+		Log map[string]string
+	}
+	in := test{map[string]string{"Username": "John"}}
+	want := "{\nLog {\nUsername John\n}\n}\n"
+	out, err := Marshal(in, nil)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
+func TestMapMapMarshal(t *testing.T) {
+	in := map[string]map[string]string{"Log": map[string]string{"Username": "John"}}
+	want := "{\nLog {\nUsername John\n}\n}\n"
+	out, err := Marshal(in, nil)
+	if s := checkMarshal(in, out, want, err); s != "" {
+		t.Error(s)
+	}
+}
+
 func TestNanoTagMarshal(t *testing.T) {
 	testCases := []struct {
 		v    any
