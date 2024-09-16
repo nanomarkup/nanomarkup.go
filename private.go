@@ -360,7 +360,10 @@ func unmarshal(d *nanodecoder.Decoder, elem reflect.Value, curr unmarshalType, m
 						return e
 					}
 					// check inline entity
-					if len(vs) == 1 && vs[0] == 123 { // {
+					if len(vs) > 0 && vs[0] == 123 { // {
+						if len(bytes.TrimSpace(vs[1:])) > 0 {
+							return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: string(item), Err: fmt.Errorf("the data of an entity must be started from a new line")}
+						}
 						if vv.IsNil() {
 							tt := vv.Type()
 							if vv.Kind() == reflect.Pointer {
@@ -492,70 +495,60 @@ func unmarshalValue(v reflect.Value, s string) error {
 			return e
 		}
 		v.SetInt(int64(n))
-		return nil
 	case reflect.Int8:
 		n, e := strconv.ParseInt(s, 0, 8)
 		if e != nil {
 			return e
 		}
 		v.SetInt(int64(n))
-		return nil
 	case reflect.Int16:
 		n, e := strconv.ParseInt(s, 0, 16)
 		if e != nil {
 			return e
 		}
 		v.SetInt(int64(n))
-		return nil
 	case reflect.Int32:
 		n, e := strconv.ParseInt(s, 0, 32)
 		if e != nil {
 			return e
 		}
 		v.SetInt(int64(n))
-		return nil
 	case reflect.Int64:
 		n, e := strconv.ParseInt(s, 0, 64)
 		if e != nil {
 			return e
 		}
 		v.SetInt(int64(n))
-		return nil
 	case reflect.Uint:
 		n, e := strconv.ParseUint(s, 0, 0)
 		if e != nil {
 			return e
 		}
 		v.SetUint(uint64(n))
-		return nil
 	case reflect.Uint8:
 		n, e := strconv.ParseUint(s, 0, 8)
 		if e != nil {
 			return e
 		}
 		v.SetUint(uint64(n))
-		return nil
 	case reflect.Uint16:
 		n, e := strconv.ParseUint(s, 0, 16)
 		if e != nil {
 			return e
 		}
 		v.SetUint(uint64(n))
-		return nil
 	case reflect.Uint32:
 		n, e := strconv.ParseUint(s, 0, 32)
 		if e != nil {
 			return e
 		}
 		v.SetUint(uint64(n))
-		return nil
 	case reflect.Uint64:
 		n, e := strconv.ParseUint(s, 0, 64)
 		if e != nil {
 			return e
 		}
 		v.SetUint(uint64(n))
-		return nil
 	case reflect.Uintptr:
 		return &nanoerror.InvalidArgumentError{Context: "Unmarshal", Err: fmt.Errorf("uintptr type of the second argument is not supported")}
 	case reflect.Float32:
@@ -564,41 +557,38 @@ func unmarshalValue(v reflect.Value, s string) error {
 			return e
 		}
 		v.SetFloat(n)
-		return nil
 	case reflect.Float64:
 		n, e := strconv.ParseFloat(s, 64)
 		if e != nil {
 			return e
 		}
 		v.SetFloat(n)
-		return nil
 	case reflect.Complex64:
 		n, e := strconv.ParseComplex(s, 64)
 		if e != nil {
 			return e
 		}
 		v.SetComplex(n)
-		return nil
 	case reflect.Complex128:
 		n, e := strconv.ParseComplex(s, 128)
 		if e != nil {
 			return e
 		}
 		v.SetComplex(n)
-		return nil
 	case reflect.String:
 		v.SetString(s)
-		return nil
 	case reflect.Bool:
 		n, e := strconv.ParseBool(s)
 		if e != nil {
 			return e
 		}
 		v.SetBool(n)
-		return nil
+	case reflect.Slice:
+		v.Set(reflect.Append(v, reflect.ValueOf(s)))
 	default:
 		return &nanoerror.InvalidEntityError{Context: "Unmarshal", Entity: s, Err: fmt.Errorf("cannot decode the entity")}
 	}
+	return nil
 }
 
 func unmarshalStructByMethod(d *nanodecoder.Decoder, val reflect.Value) (bool, error) {
