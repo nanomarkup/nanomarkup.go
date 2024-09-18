@@ -282,13 +282,19 @@ func unmarshal(d *nanodecoder.Decoder, elem reflect.Value, curr unmarshalType, m
 				}
 			} else {
 				// it is an internal entity, parse it using other thread/loop
-				name := elem.Elem().String()
 				var e error
-				if meta == nil {
-					e = unmarshal(d, elem, entity, nil)
+				if curr == array {
+					val := reflect.New(elem.Type().Elem()).Elem()
+					e = unmarshal(d, val, entity, meta)
+					elem.Set(reflect.Append(elem, val))
 				} else {
-					meta.AddField(name, &nanometadata.Metadata{})
-					e = unmarshal(d, elem, entity, meta.GetField(name))
+					if meta == nil {
+						e = unmarshal(d, elem, entity, nil)
+					} else {
+						name := elem.Elem().String()
+						meta.AddField(name, &nanometadata.Metadata{})
+						e = unmarshal(d, elem, entity, meta.GetField(name))
+					}
 				}
 				if e != nil {
 					return e
@@ -387,6 +393,7 @@ func unmarshal(d *nanodecoder.Decoder, elem reflect.Value, curr unmarshalType, m
 							if tt.Elem().Kind() == reflect.Map {
 								vv = reflect.MakeMap(tt.Elem())
 							} else {
+								// vv = reflect.New(tt).Elem()
 								vv = reflect.New(tt.Elem()).Elem()
 							}
 						} else if tt.Kind() == reflect.Map {
@@ -415,7 +422,8 @@ func unmarshal(d *nanodecoder.Decoder, elem reflect.Value, curr unmarshalType, m
 								} else {
 									// it is an internal entity, parse it using other thread/loop
 									// check UnmarshalNano and UnmarshalText methods
-									ok, e := unmarshalStructByMethod(d, field)
+									// ok, e := unmarshalStructByMethod(d, field)
+									ok, e := unmarshalStructByMethod(d, vv)
 									if e != nil {
 										return e
 									} else if ok {
@@ -601,6 +609,7 @@ func unmarshalStructByMethod(d *nanodecoder.Decoder, val reflect.Value) (bool, e
 		m := val.Interface()
 		if m, ok := (m).(Unmarshaler); ok {
 			in, err := getUnmarshalData(d)
+			in = bytes.TrimLeft(in, " \t")
 			if err != nil {
 				return false, err
 			}
@@ -618,6 +627,7 @@ func unmarshalStructByMethod(d *nanodecoder.Decoder, val reflect.Value) (bool, e
 		m := val.Interface()
 		if m, ok := (m).(encoding.TextUnmarshaler); ok {
 			in, err := getUnmarshalData(d)
+			in = bytes.TrimLeft(in, " \t")
 			if err != nil {
 				return false, err
 			}
